@@ -201,6 +201,27 @@ def test_wechat_payment_provider_requires_complete_credentials():
         raise AssertionError("partial WeChat Pay configuration must be rejected")
 
 
+def test_wechat_payment_provider_rejects_bad_key_or_missing_certificate():
+    try:
+        Settings(
+            payment_provider="wechat_v3", wechat_pay_mchid="mchid", wechat_pay_appid="appid",
+            wechat_pay_api_v3_key="too-short", wechat_pay_platform_cert_path="/does/not/exist.pem",
+        ).validate_runtime()
+    except ValueError as error:
+        assert "32 bytes" in str(error)
+    else:
+        raise AssertionError("invalid API v3 key must be rejected")
+    try:
+        Settings(
+            payment_provider="wechat_v3", wechat_pay_mchid="mchid", wechat_pay_appid="appid",
+            wechat_pay_api_v3_key="a" * 32, wechat_pay_platform_cert_path="/does/not/exist.pem",
+        ).validate_runtime()
+    except ValueError as error:
+        assert "certificate file" in str(error)
+    else:
+        raise AssertionError("missing platform certificate must be rejected")
+
+
 def test_print_dispatch_job_requires_dedicated_server_token(monkeypatch):
     with TestClient(app) as client:
         assert client.post("/api/internal/jobs/dispatch-print-events").status_code == 503

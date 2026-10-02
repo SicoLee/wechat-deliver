@@ -1,6 +1,7 @@
 from decimal import Decimal
 from functools import lru_cache
 import json
+from pathlib import Path
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field
@@ -56,6 +57,10 @@ class Settings(BaseSettings):
             required = (self.wechat_pay_mchid, self.wechat_pay_appid, self.wechat_pay_api_v3_key, self.wechat_pay_platform_cert_path)
             if not all(required):
                 raise ValueError("WeChat Pay v3 configuration is incomplete")
+            if len((self.wechat_pay_api_v3_key or "").encode("utf-8")) != 32:
+                raise ValueError("WECHAT_PAY_API_V3_KEY must be exactly 32 bytes")
+            if not Path(self.wechat_pay_platform_cert_path or "").is_file():
+                raise ValueError("WECHAT_PAY_PLATFORM_CERT_PATH must point to a readable certificate file")
 
     def delivery_distance_tiers(self) -> list[tuple[float, Decimal]]:
         try:

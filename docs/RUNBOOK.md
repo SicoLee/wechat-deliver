@@ -50,7 +50,7 @@ uvicorn app.main:app --reload --port 8000
 
 默认 `DELIVERY_PRICING_MODE=fixed`，所有订单收取 `DELIVERY_FEE=2.00`。需要按道路距离收费时，将模式改成 `tiered` 并填写 `DELIVERY_DISTANCE_TIERS_JSON`；未匹配到任何距离档位时，报价和下单都会返回“超出配送范围”，历史订单金额不会被配置变更影响。
 
-微信支付申请完成后，使用 `PAYMENT_PROVIDER=wechat_v3`，并在服务器环境变量填入商户号、小程序 AppID、32 字节 API v3 Key 和微信支付平台证书本地路径。`POST /api/payments/wechat/notify` 会先验签和 AES-GCM 解密，再核对订单号、商户号、AppID、交易状态与金额；仅验证通过才落库支付状态。回调不直接打印，而是写入既有打印事件，避免慢打印拖延微信回调。
+微信支付申请完成后，使用 `PAYMENT_PROVIDER=wechat_v3`，并在服务器环境变量填入商户号、小程序 AppID、32 字节 API v3 Key 和微信支付平台证书本地路径。启动时会验证 Key 长度及证书文件存在性，避免运行中才暴露配置错误。`POST /api/payments/wechat/notify` 会先验签和 AES-GCM 解密，再核对订单号、商户号、AppID、交易状态与金额；仅验证通过才落库支付状态。回调不直接打印，而是写入既有打印事件，避免慢打印拖延微信回调。
 
 为真实支付环境设置随机 `JOB_TOKEN` 后，由同服务器的私有定时任务或 worker 请求 `POST /api/internal/jobs/dispatch-print-events`，请求头为 `X-Job-Token`。它负责消费待打印事件；此令牌不可提供给小程序或浏览器。开发环境的模拟支付仍会立即调度，方便演示。
 
