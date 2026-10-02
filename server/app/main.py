@@ -266,6 +266,11 @@ def admin_orders(_: str = Depends(require_admin), db: Session = Depends(get_db))
     return db.scalars(select(Order).options(selectinload(Order.items)).where(Order.status != OrderStatus.PENDING_PAYMENT).order_by(Order.id.desc())).all()
 
 
+@app.get("/api/admin/orders/{order_id}", response_model=OrderOut)
+def admin_order_detail(order_id: int, _: str = Depends(require_admin), db: Session = Depends(get_db)):
+    return query_order(db, order_id)
+
+
 @app.get("/api/admin/orders/{order_id}/history", response_model=list[OrderAuditOut])
 def order_history(order_id: int, _: str = Depends(require_admin), db: Session = Depends(get_db)):
     query_order(db, order_id)

@@ -73,6 +73,7 @@ def test_paid_order_is_visible_to_admin_and_can_progress():
         headers = {"X-OpenID": "test-admin"}
         visible = client.get("/api/admin/orders", headers=headers)
         assert [item["id"] for item in visible.json()] == [order["id"]]
+        assert client.get(f"/api/admin/orders/{order['id']}", headers=headers).json()["id"] == order["id"]
 
         making = client.patch(f"/api/admin/orders/{order['id']}/status?status=MAKING", headers=headers)
         assert making.status_code == 200
