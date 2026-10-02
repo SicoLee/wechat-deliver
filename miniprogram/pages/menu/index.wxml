@@ -1,5 +1,5 @@
 <view class="page">
-  <view class="row"><view class="title">今天吃什么？</view><view class="muted" bindtap="goOrders">我的订单</view></view><view class="muted" style="margin:12rpx 0 26rpx">立即配送 · 配送费固定 ¥2</view>
+  <view class="row"><view class="title">今天吃什么？</view><view class="muted" bindtap="goOrders">我的订单</view></view><view class="muted" style="margin:12rpx 0 26rpx">立即配送 · 配送费按收货地址计算</view>
   <view class="card" wx:for="{{products}}" wx:key="id">
     <view class="row"><view><view>{{item.name}}</view><view class="price">¥{{item.price}}</view></view><view class="btn" data-id="{{item.id}}" bindtap="add">加入</view></view>
   </view>
