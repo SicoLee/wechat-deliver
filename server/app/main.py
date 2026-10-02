@@ -52,6 +52,8 @@ app.middleware("http")(request_log_middleware)
 
 
 def openid_from_header(x_openid: Optional[str] = Header(default=None)) -> str:
+    if settings.app_env == "production":
+        raise HTTPException(503, "正式环境尚未接入微信登录")
     if not x_openid:
         raise HTTPException(401, "缺少 X-OpenID；小程序正式版应由 wx.login 换取")
     return x_openid
