@@ -3,6 +3,7 @@
 一个可演示、可逐步接入生产服务的单店微信小程序：顾客点单、地图地址、固定配送费、模拟支付、商家订单管理与模拟打印。
 
 在开始前请阅读 [运行与测试指南](docs/RUNBOOK.md)；真实支付、地图和打印接入时按 [真实服务接入清单](docs/PRODUCTION-INTEGRATION-CHECKLIST.md) 逐项完成。
+店主准备账号、资料和设备时请按 [商家上线准备指南](docs/商家上线准备指南.md) 执行。
 持续维护记录见 [变更日志](docs/CHANGELOG.md)。每次推送 `main` 都会由 GitHub Actions 重新检查后端编译、订单流程测试和小程序 JavaScript 语法。
 
 ## 项目结构
