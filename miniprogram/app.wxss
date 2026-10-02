@@ -39,3 +39,11 @@ page { background:#f5f5f7; color:#1d1d1f; font-family:-apple-system,BlinkMacSyst
 .order-card { padding:26rpx 28rpx; }
 .order-items { margin-top:16rpx; }
 .order-line { margin-top:6rpx; }
+.admin-tools { display:flex; gap:14rpx; margin-top:22rpx; }
+.admin-tools .btn { flex:1; }
+.filter-bar { display:flex; gap:12rpx; overflow-x:auto; margin:16rpx -4rpx -4rpx; padding:4rpx; white-space:nowrap; }
+.filter-chip { flex:none; min-height:58rpx; padding:0 20rpx; background:#f5f5f7; color:#6e6e73; font-size:24rpx; }
+.filter-chip.active { background:#0071e3; color:#fff; }
+.merchant-order { padding:26rpx 28rpx; }
+.merchant-address { margin-top:16rpx; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.merchant-meta { margin-top:18rpx; }
