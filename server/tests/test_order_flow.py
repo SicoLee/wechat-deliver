@@ -50,6 +50,8 @@ def test_paid_order_is_visible_to_admin_and_can_progress():
         order = created.json()
         assert order["status"] == "PENDING_PAYMENT"
         assert order["delivery_fee"] == "2.00"
+        assert client.get(f"/api/orders/{order['id']}", headers={"X-OpenID": "test-customer"}).status_code == 200
+        assert client.get(f"/api/orders/{order['id']}", headers={"X-OpenID": "another-customer"}).status_code == 404
 
         paid = client.post(f"/api/orders/{order['id']}/mock-payment-callback")
         assert paid.status_code == 200

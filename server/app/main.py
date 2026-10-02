@@ -252,6 +252,15 @@ def my_orders(openid: str = Depends(openid_from_header), db: Session = Depends(g
     return db.scalars(select(Order).options(selectinload(Order.items)).where(Order.openid == openid).order_by(Order.id.desc())).all()
 
 
+@app.get("/api/orders/{order_id}", response_model=OrderOut)
+def my_order_detail(order_id: int, openid: str = Depends(openid_from_header), db: Session = Depends(get_db)):
+    order = query_order(db, order_id)
+    # Use 404 rather than 403 so order IDs cannot be enumerated across customers.
+    if order.openid != openid:
+        raise HTTPException(404, "订单不存在")
+    return order
+
+
 @app.get("/api/admin/orders", response_model=list[OrderOut])
 def admin_orders(_: str = Depends(require_admin), db: Session = Depends(get_db)):
     return db.scalars(select(Order).options(selectinload(Order.items)).where(Order.status != OrderStatus.PENDING_PAYMENT).order_by(Order.id.desc())).all()
