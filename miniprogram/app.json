@@ -1,4 +1,4 @@
 {
-  "pages": ["pages/menu/index", "pages/cart/index", "pages/checkout/index", "pages/order-result/index", "pages/admin-orders/index", "pages/admin-order-detail/index"],
+  "pages": ["pages/menu/index", "pages/cart/index", "pages/checkout/index", "pages/order-result/index", "pages/order-list/index", "pages/admin-orders/index", "pages/admin-order-detail/index"],
   "window": {"navigationBarTitleText": "妈妈的店", "navigationBarBackgroundColor": "#ffffff", "backgroundColor": "#f7f7f7"}
 }

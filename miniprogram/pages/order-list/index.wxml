@@ -1,0 +1,8 @@
+<view class="page">
+  <view wx:if="{{!orders.length}}" class="card muted">还没有订单，去选一碗喜欢的粉吧。</view>
+  <view wx:for="{{orders}}" wx:key="id" class="card">
+    <view class="row"><view>#{{item.order_no}}</view><view class="price">¥{{item.total_amount}}</view></view>
+    <view class="muted" wx:for="{{item.items}}" wx:for-item="line" wx:key="product_id">{{line.product_name}} × {{line.quantity}}</view>
+    <view class="row" style="margin-top:14rpx"><view>{{item.status}}</view><view class="muted">{{item.created_at}}</view></view>
+  </view>
+</view>
