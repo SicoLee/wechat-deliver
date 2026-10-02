@@ -13,6 +13,7 @@ from .schemas import OrderCreateIn, OrderOut, ProductOut
 from .services.delivery import MockCyclingDistanceProvider
 from .services.order_events import enqueue_receipt_print, process_pending_prints
 from .services.printer import MockPrinter
+from .observability import configure_logging, request_log_middleware
 
 settings = get_settings()
 distance_provider = MockCyclingDistanceProvider()
@@ -34,12 +35,14 @@ def seed_products(db: Session) -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    configure_logging(settings.log_level)
     with next(get_db()) as db:
         seed_products(db)
     yield
 
 
 app = FastAPI(title="单店微信点单 API", version="0.1.0", lifespan=lifespan)
+app.middleware("http")(request_log_middleware)
 
 
 def openid_from_header(x_openid: Optional[str] = Header(default=None)) -> str:

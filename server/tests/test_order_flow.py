@@ -23,6 +23,7 @@ def test_paid_order_is_visible_to_admin_and_can_progress():
         products = client.get("/api/products")
         assert products.status_code == 200
         assert products.json()
+        assert len(products.headers["X-Request-ID"]) > 10
 
         created = client.post(
             "/api/orders",

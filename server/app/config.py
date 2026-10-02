@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     app_env: str = "development"
+    log_level: str = "INFO"
     database_url: str = "sqlite:///./data/dev.db"
     shop_name: str = "妈妈的店"
     shop_latitude: float = 26.45
