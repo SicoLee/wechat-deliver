@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
@@ -14,7 +15,6 @@ from .services.order_events import enqueue_receipt_print, process_pending_prints
 from .services.printer import MockPrinter
 
 settings = get_settings()
-app = FastAPI(title="单店微信点单 API", version="0.1.0")
 distance_provider = MockCyclingDistanceProvider()
 printer = MockPrinter()
 
@@ -32,10 +32,14 @@ def seed_products(db: Session) -> None:
     db.commit()
 
 
-@app.on_event("startup")
-def startup() -> None:
+@asynccontextmanager
+async def lifespan(_: FastAPI):
     with next(get_db()) as db:
         seed_products(db)
+    yield
+
+
+app = FastAPI(title="单店微信点单 API", version="0.1.0", lifespan=lifespan)
 
 
 def openid_from_header(x_openid: Optional[str] = Header(default=None)) -> str:

@@ -9,6 +9,7 @@
 - 后端核心订单流自动化测试和 GitHub Actions 持续集成。
 - 支付交易标识、支付状态和持久化订单事件（transactional outbox）基础。
 - Alembic 数据库版本迁移与首份不可变初始 schema。
+- FastAPI lifespan 生命周期管理，移除弃用的启动事件注册方式。
 
 ### Verified
 
