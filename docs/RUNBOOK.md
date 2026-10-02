@@ -30,7 +30,7 @@ alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
 
-`alembic upgrade head` 会创建 `server/data/dev.db` 和表结构；API 启动后写入 5 个预设商品。接口文档在 <http://127.0.0.1:8000/docs>，健康检查在 <http://127.0.0.1:8000/api/health>。
+`alembic upgrade head` 会创建 `server/data/dev.db` 和表结构；API 启动后写入 5 个预设商品。接口文档在 <http://127.0.0.1:8000/docs>，健康检查在 <http://127.0.0.1:8000/api/health>；它只显示当前环境及实际支付/地图提供方，不会输出密钥。
 
 运行日志默认输出到终端，可通过 `LOG_LEVEL` 调整。每个 API 响应带有 `X-Request-ID`；遇到线上问题时，提供该值即可关联请求日志。日志刻意不记录请求体、手机号、地址、支付凭据或查询字符串。
 

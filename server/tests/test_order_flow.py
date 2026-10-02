@@ -31,6 +31,9 @@ def test_paid_order_is_visible_to_admin_and_can_progress():
         readiness = client.get("/api/ready")
         assert readiness.status_code == 200
         assert readiness.json()["database"] == "ready"
+        health = client.get("/api/health")
+        assert health.json()["payment_provider"] == "mock"
+        assert health.json()["delivery_provider"] == "mock"
         products = client.get("/api/products")
         assert products.status_code == 200
         assert products.json()

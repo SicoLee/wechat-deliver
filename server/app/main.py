@@ -105,7 +105,12 @@ def dispatch_pending_prints(db: Session, order_id: Optional[int] = None) -> int:
 
 @app.get("/api/health")
 def health():
-    return {"ok": True, "env": settings.app_env, "payment_mode": "mock" if settings.app_env == "development" else "wechat"}
+    return {
+        "ok": True,
+        "env": settings.app_env,
+        "payment_provider": settings.payment_provider,
+        "delivery_provider": settings.delivery_provider,
+    }
 
 
 @app.get("/api/ready")
