@@ -13,6 +13,7 @@ from .models import Admin, Order, OrderAuditLog, OrderItem, OrderStatus, Payment
 from .schemas import OrderAuditOut, OrderCreateIn, OrderOut, ProductCreateIn, ProductOut, ProductUpdateIn
 from .services.order_audit import record_order_audit
 from .services.delivery import build_distance_provider
+from .services.delivery_pricing import DeliveryUnavailable, calculate_delivery_fee
 from .services.order_events import enqueue_receipt_print, process_pending_prints
 from .services.printer import MockPrinter
 from .services.payment import PaymentVerificationError, WechatPayV3CallbackVerifier, confirm_payment
@@ -80,6 +81,13 @@ def query_order(db: Session, order_id: int) -> Order:
     return order
 
 
+def delivery_quote_for(latitude: float, longitude: float):
+    distance = distance_provider.distance_km(settings.shop_latitude, settings.shop_longitude, latitude, longitude)
+    tiers = settings.delivery_distance_tiers() if settings.delivery_pricing_mode == "tiered" else []
+    fee = calculate_delivery_fee(distance, settings.delivery_pricing_mode, settings.delivery_fee, tiers)
+    return distance, fee
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True, "env": settings.app_env, "payment_mode": "mock" if settings.app_env == "development" else "wechat"}
@@ -138,8 +146,11 @@ def bind_admin(phone: str, openid: str = Depends(openid_from_header), db: Sessio
 
 @app.get("/api/delivery/quote")
 def delivery_quote(latitude: float, longitude: float):
-    distance = distance_provider.distance_km(settings.shop_latitude, settings.shop_longitude, latitude, longitude)
-    return {"distance_km": distance, "delivery_fee": settings.delivery_fee, "distance_source": settings.delivery_provider}
+    try:
+        distance, fee = delivery_quote_for(latitude, longitude)
+    except DeliveryUnavailable as error:
+        raise HTTPException(400, str(error)) from error
+    return {"distance_km": distance, "delivery_fee": fee, "distance_source": settings.delivery_provider}
 
 
 @app.post("/api/orders", response_model=OrderOut)
@@ -149,10 +160,13 @@ def create_order(payload: OrderCreateIn, openid: str = Depends(openid_from_heade
     if len(products_by_id) != len(set(product_ids)):
         raise HTTPException(400, "存在已下架或不存在的商品")
     goods = sum((products_by_id[item.product_id].price * item.quantity for item in payload.items), Decimal("0.00"))
-    distance = distance_provider.distance_km(settings.shop_latitude, settings.shop_longitude, payload.address.latitude, payload.address.longitude)
+    try:
+        distance, delivery_fee = delivery_quote_for(payload.address.latitude, payload.address.longitude)
+    except DeliveryUnavailable as error:
+        raise HTTPException(400, str(error)) from error
     order = Order(
         order_no=datetime.now().strftime("%Y%m%d%H%M%S") + uuid4().hex[:4].upper(), openid=openid,
-        goods_amount=goods, delivery_fee=settings.delivery_fee, total_amount=goods + settings.delivery_fee,
+        goods_amount=goods, delivery_fee=delivery_fee, total_amount=goods + delivery_fee,
         address=f"{payload.address.name} {payload.address.detail}", latitude=payload.address.latitude,
         longitude=payload.address.longitude, delivery_distance_km=distance, phone=payload.address.phone,
         remark=payload.remark,

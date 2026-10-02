@@ -1,6 +1,7 @@
 """The core payment-to-fulfilment flow must remain safe as integrations evolve."""
 import os
 from pathlib import Path
+from decimal import Decimal
 
 os.environ["DATABASE_URL"] = "sqlite:///./data/test.db"
 TEST_DB = Path("data/test.db")
@@ -15,6 +16,7 @@ import app.main as main_module  # noqa: E402
 from app.config import Settings  # noqa: E402
 from app.services.delivery import TencentBicyclingDistanceProvider  # noqa: E402
 from app.worker import run_once  # noqa: E402
+from app.services.delivery_pricing import DeliveryUnavailable, calculate_delivery_fee  # noqa: E402
 from app.models import EventStatus, OrderEvent  # noqa: E402
 
 
@@ -152,3 +154,15 @@ def test_print_dispatch_job_requires_dedicated_server_token(monkeypatch):
 
 def test_worker_can_poll_an_empty_outbox():
     assert run_once() == 0
+
+
+def test_tiered_delivery_pricing_preserves_distance_boundaries():
+    tiers = [(2.0, Decimal("2.00")), (4.0, Decimal("4.00")), (6.0, Decimal("7.00"))]
+    assert calculate_delivery_fee(2.0, "tiered", Decimal("0"), tiers) == Decimal("2.00")
+    assert calculate_delivery_fee(3.2, "tiered", Decimal("0"), tiers) == Decimal("4.00")
+    try:
+        calculate_delivery_fee(6.01, "tiered", Decimal("0"), tiers)
+    except DeliveryUnavailable:
+        pass
+    else:
+        raise AssertionError("out-of-range delivery must be rejected")
