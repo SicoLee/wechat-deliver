@@ -14,7 +14,7 @@ from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 import app.main as main_module  # noqa: E402
 from app.config import Settings  # noqa: E402
-from app.services.delivery import TencentBicyclingDistanceProvider  # noqa: E402
+from app.services.delivery import DeliveryProviderError, TencentBicyclingDistanceProvider  # noqa: E402
 from app.worker import run_once  # noqa: E402
 from app.services.delivery_pricing import DeliveryUnavailable, calculate_delivery_fee  # noqa: E402
 from app.models import EventStatus, OrderEvent  # noqa: E402
@@ -144,6 +144,31 @@ def test_tencent_cycling_provider_reads_road_distance_without_leaking_key():
     with httpx.Client(transport=transport) as client:
         provider = TencentBicyclingDistanceProvider("test-key", client=client)
         assert provider.distance_km(26.45, 106.98, 26.47, 106.95) == 3.25
+
+
+def test_tencent_cycling_provider_wraps_vendor_failures():
+    import httpx
+    transport = httpx.MockTransport(lambda request: httpx.Response(502, text="upstream failure"))
+    with httpx.Client(transport=transport) as client:
+        provider = TencentBicyclingDistanceProvider("test-key", client=client)
+        try:
+            provider.distance_km(26.45, 106.98, 26.47, 106.95)
+        except DeliveryProviderError as error:
+            assert "暂不可用" in str(error)
+        else:
+            raise AssertionError("vendor failure must be wrapped")
+
+
+def test_map_outage_returns_a_safe_retryable_error(monkeypatch):
+    class UnavailableProvider:
+        def distance_km(self, *_):
+            raise DeliveryProviderError("地图距离服务暂不可用，请稍后重试")
+
+    monkeypatch.setattr(main_module, "distance_provider", UnavailableProvider())
+    with TestClient(app) as client:
+        response = client.get("/api/delivery/quote?latitude=26.47&longitude=106.95")
+        assert response.status_code == 503
+        assert response.json()["detail"] == "地图距离服务暂不可用，请稍后重试"
 
 
 def test_wechat_payment_provider_requires_complete_credentials():

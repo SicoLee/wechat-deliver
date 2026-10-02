@@ -4,6 +4,10 @@ from typing import Optional, Protocol
 import httpx
 
 
+class DeliveryProviderError(RuntimeError):
+    """A map provider is unavailable or returned an unusable route response."""
+
+
 class CyclingDistanceProvider(Protocol):
     def distance_km(self, origin_lat: float, origin_lng: float, dest_lat: float, dest_lng: float) -> float:
         ...
@@ -27,17 +31,21 @@ class TencentBicyclingDistanceProvider:
         self.client = client or httpx.Client()
 
     def distance_km(self, origin_lat: float, origin_lng: float, dest_lat: float, dest_lng: float) -> float:
-        response = self.client.get(
-            self.endpoint,
-            params={"key": self.key, "from": f"{origin_lat},{origin_lng}", "to": f"{dest_lat},{dest_lng}"},
-            timeout=self.timeout_seconds,
-        )
-        response.raise_for_status()
-        payload = response.json()
-        routes = payload.get("result", {}).get("routes", []) if payload.get("status") == 0 else []
-        if not routes or not isinstance(routes[0].get("distance"), (int, float)):
-            raise RuntimeError("Tencent Map did not return a bicycling distance")
-        return round(routes[0]["distance"] / 1000, 2)
+        try:
+            response = self.client.get(
+                self.endpoint,
+                params={"key": self.key, "from": f"{origin_lat},{origin_lng}", "to": f"{dest_lat},{dest_lng}"},
+                timeout=self.timeout_seconds,
+            )
+            response.raise_for_status()
+            payload = response.json()
+            routes = payload.get("result", {}).get("routes", []) if payload.get("status") == 0 else []
+            if not routes or not isinstance(routes[0].get("distance"), (int, float)):
+                raise ValueError("missing bicycling route")
+            return round(routes[0]["distance"] / 1000, 2)
+        except (httpx.HTTPError, ValueError, TypeError) as error:
+            # Deliberately do not expose provider responses or the map key to callers.
+            raise DeliveryProviderError("地图距离服务暂不可用，请稍后重试") from error
 
 
 def build_distance_provider(provider: str, key: Optional[str], timeout_seconds: float) -> CyclingDistanceProvider:

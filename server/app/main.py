@@ -13,7 +13,7 @@ from .db import get_db
 from .models import Admin, Order, OrderAuditLog, OrderItem, OrderStatus, PaymentStatus, PrintStatus, Product
 from .schemas import OrderAuditOut, OrderCreateIn, OrderOut, ProductCreateIn, ProductOut, ProductUpdateIn
 from .services.order_audit import record_order_audit
-from .services.delivery import build_distance_provider
+from .services.delivery import DeliveryProviderError, build_distance_provider
 from .services.delivery_pricing import DeliveryUnavailable, calculate_delivery_fee
 from .services.order_events import enqueue_receipt_print, process_pending_prints
 from .services.printer import MockPrinter
@@ -83,7 +83,10 @@ def query_order(db: Session, order_id: int) -> Order:
 
 
 def delivery_quote_for(latitude: float, longitude: float):
-    distance = distance_provider.distance_km(settings.shop_latitude, settings.shop_longitude, latitude, longitude)
+    try:
+        distance = distance_provider.distance_km(settings.shop_latitude, settings.shop_longitude, latitude, longitude)
+    except DeliveryProviderError as error:
+        raise HTTPException(503, str(error)) from error
     tiers = settings.delivery_distance_tiers() if settings.delivery_pricing_mode == "tiered" else []
     fee = calculate_delivery_fee(distance, settings.delivery_pricing_mode, settings.delivery_fee, tiers)
     return distance, fee
@@ -158,6 +161,8 @@ def bind_admin(phone: str, openid: str = Depends(openid_from_header), db: Sessio
 def delivery_quote(latitude: float, longitude: float):
     try:
         distance, fee = delivery_quote_for(latitude, longitude)
+    except HTTPException:
+        raise
     except DeliveryUnavailable as error:
         raise HTTPException(400, str(error)) from error
     return {"distance_km": distance, "delivery_fee": fee, "distance_source": settings.delivery_provider}
@@ -180,6 +185,8 @@ def create_order(payload: OrderCreateIn, x_idempotency_key: Optional[str] = Head
     goods = sum((products_by_id[item.product_id].price * item.quantity for item in payload.items), Decimal("0.00"))
     try:
         distance, delivery_fee = delivery_quote_for(payload.address.latitude, payload.address.longitude)
+    except HTTPException:
+        raise
     except DeliveryUnavailable as error:
         raise HTTPException(400, str(error)) from error
     order = Order(
