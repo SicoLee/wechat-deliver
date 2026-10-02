@@ -17,6 +17,7 @@
 - 下单载荷完整性校验（坐标边界、购物车上限和去重）。
 - 商家订单页可见期间的 10 秒轻量轮询与下拉刷新。
 - GitHub Actions 基础 Action 升级至当前主版本。
+- CI 固定 Ubuntu 24.04，避免 `ubuntu-latest` 自动迁移改变构建环境。
 
 ### Verified
 
