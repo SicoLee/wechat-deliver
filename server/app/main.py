@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 from datetime import datetime
 from decimal import Decimal
+import hmac
 from typing import Optional
 from uuid import uuid4
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
@@ -57,6 +58,13 @@ def openid_from_header(x_openid: Optional[str] = Header(default=None)) -> str:
 def require_development() -> None:
     if settings.app_env not in {"development", "test"}:
         raise HTTPException(404, "Not Found")
+
+
+def require_job_token(x_job_token: Optional[str] = Header(default=None)) -> None:
+    if not settings.job_token:
+        raise HTTPException(503, "后台任务尚未配置")
+    if not x_job_token or not hmac.compare_digest(x_job_token, settings.job_token):
+        raise HTTPException(403, "后台任务凭据无效")
 
 
 def require_admin(openid: str = Depends(openid_from_header), db: Session = Depends(get_db)) -> str:
@@ -184,6 +192,12 @@ async def wechat_payment_notify(request: Request, db: Session = Depends(get_db))
     except PaymentVerificationError as error:
         raise HTTPException(400, "invalid payment callback") from error
     return Response(status_code=204)
+
+
+@app.post("/api/internal/jobs/dispatch-print-events")
+def dispatch_print_events(_: None = Depends(require_job_token), db: Session = Depends(get_db)):
+    """Invoke from a private scheduler/worker; never expose JOB_TOKEN to the mini-program."""
+    return {"processed": process_pending_prints(db, printer)}
 
 
 @app.get("/api/orders/mine", response_model=list[OrderOut])

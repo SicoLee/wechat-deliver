@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     wechat_pay_appid: Optional[str] = None
     wechat_pay_api_v3_key: Optional[str] = None
     wechat_pay_platform_cert_path: Optional[str] = None
+    job_token: Optional[str] = None
     admin_phones: str = "18785409634,18285424586"
 
     @property

@@ -40,6 +40,8 @@ uvicorn app.main:app --reload --port 8000
 
 微信支付申请完成后，使用 `PAYMENT_PROVIDER=wechat_v3`，并在服务器环境变量填入商户号、小程序 AppID、32 字节 API v3 Key 和微信支付平台证书本地路径。`POST /api/payments/wechat/notify` 会先验签和 AES-GCM 解密，再核对订单号、商户号、AppID、交易状态与金额；仅验证通过才落库支付状态。回调不直接打印，而是写入既有打印事件，避免慢打印拖延微信回调。
 
+为真实支付环境设置随机 `JOB_TOKEN` 后，由同服务器的私有定时任务或 worker 请求 `POST /api/internal/jobs/dispatch-print-events`，请求头为 `X-Job-Token`。它负责消费待打印事件；此令牌不可提供给小程序或浏览器。开发环境的模拟支付仍会立即调度，方便演示。
+
 商家订单页打开时每 10 秒刷新一次，离开页面即停止；也可以下拉立即刷新。小店首版采用轮询，部署和故障排查都比常驻 WebSocket 简单；订单量或店员数量增长后可无缝替换为 WebSocket/SSE 推送。
 
 ## 直接测试后端（不需要微信开发者工具）

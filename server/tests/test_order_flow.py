@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
+import app.main as main_module  # noqa: E402
 from app.config import Settings  # noqa: E402
 from app.services.delivery import TencentBicyclingDistanceProvider  # noqa: E402
 from app.models import EventStatus, OrderEvent  # noqa: E402
@@ -136,3 +137,13 @@ def test_wechat_payment_provider_requires_complete_credentials():
         assert "WeChat Pay v3 configuration is incomplete" in str(error)
     else:
         raise AssertionError("partial WeChat Pay configuration must be rejected")
+
+
+def test_print_dispatch_job_requires_dedicated_server_token(monkeypatch):
+    with TestClient(app) as client:
+        assert client.post("/api/internal/jobs/dispatch-print-events").status_code == 503
+        monkeypatch.setattr(main_module.settings, "job_token", "test-job-token")
+        assert client.post("/api/internal/jobs/dispatch-print-events", headers={"X-Job-Token": "wrong"}).status_code == 403
+        response = client.post("/api/internal/jobs/dispatch-print-events", headers={"X-Job-Token": "test-job-token"})
+        assert response.status_code == 200
+        assert response.json()["processed"] == 0
