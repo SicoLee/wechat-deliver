@@ -30,6 +30,16 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+  worker:
+    build: .
+    entrypoint: ["python", "-m", "app.worker"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL in .env}
+      APP_ENV: ${APP_ENV:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    depends_on:
+      postgres:
+        condition: service_healthy
 
 volumes:
   postgres_data:

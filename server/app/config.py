@@ -2,6 +2,7 @@ from decimal import Decimal
 from functools import lru_cache
 from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field
 
 
 class Settings(BaseSettings):
@@ -22,6 +23,7 @@ class Settings(BaseSettings):
     wechat_pay_api_v3_key: Optional[str] = None
     wechat_pay_platform_cert_path: Optional[str] = None
     job_token: Optional[str] = None
+    worker_poll_interval_seconds: float = Field(default=5.0, gt=0, le=300)
     admin_phones: str = "18785409634,18285424586"
 
     @property

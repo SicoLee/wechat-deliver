@@ -14,6 +14,7 @@ from app.main import app  # noqa: E402
 import app.main as main_module  # noqa: E402
 from app.config import Settings  # noqa: E402
 from app.services.delivery import TencentBicyclingDistanceProvider  # noqa: E402
+from app.worker import run_once  # noqa: E402
 from app.models import EventStatus, OrderEvent  # noqa: E402
 
 
@@ -147,3 +148,7 @@ def test_print_dispatch_job_requires_dedicated_server_token(monkeypatch):
         response = client.post("/api/internal/jobs/dispatch-print-events", headers={"X-Job-Token": "test-job-token"})
         assert response.status_code == 200
         assert response.json()["processed"] == 0
+
+
+def test_worker_can_poll_an_empty_outbox():
+    assert run_once() == 0

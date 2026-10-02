@@ -42,6 +42,8 @@ uvicorn app.main:app --reload --port 8000
 
 为真实支付环境设置随机 `JOB_TOKEN` 后，由同服务器的私有定时任务或 worker 请求 `POST /api/internal/jobs/dispatch-print-events`，请求头为 `X-Job-Token`。它负责消费待打印事件；此令牌不可提供给小程序或浏览器。开发环境的模拟支付仍会立即调度，方便演示。
 
+Docker Compose 现在默认启动 `worker` 服务，它每 5 秒消费一次待打印事件，不需要额外 cron。`JOB_TOKEN` 接口仍保留给以后将 worker 放到独立任务平台时使用。真实云打印适配器接入后会替换 worker 内的模拟打印实现。
+
 商家订单页打开时每 10 秒刷新一次，离开页面即停止；也可以下拉立即刷新。小店首版采用轮询，部署和故障排查都比常驻 WebSocket 简单；订单量或店员数量增长后可无缝替换为 WebSocket/SSE 推送。
 
 ## 直接测试后端（不需要微信开发者工具）
