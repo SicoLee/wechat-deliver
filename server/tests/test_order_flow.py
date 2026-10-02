@@ -123,6 +123,11 @@ def test_order_rejects_duplicate_products_and_invalid_coordinates():
             json={"items": [{"product_id": 1, "quantity": 1}], "address": {"name": "测试", "detail": "1号", "latitude": 99, "longitude": 106, "phone": "13800000000"}},
         )
         assert invalid_location.status_code == 422
+        invalid_phone = client.post(
+            "/api/orders", headers={"X-OpenID": "test-customer"},
+            json={"items": [{"product_id": 1, "quantity": 1}], "address": {"name": "测试", "detail": "1号", "latitude": 26, "longitude": 106, "phone": "not-a-phone"}},
+        )
+        assert invalid_phone.status_code == 422
 
 
 def test_order_creation_is_idempotent_per_customer_request_key():

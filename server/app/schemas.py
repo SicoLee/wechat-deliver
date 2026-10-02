@@ -1,5 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
+import re
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator, model_validator
 from .models import OrderStatus, PaymentStatus, PrintStatus
@@ -16,6 +17,14 @@ class AddressIn(BaseModel):
     latitude: float = Field(ge=-90, le=90)
     longitude: float = Field(ge=-180, le=180)
     phone: str = Field(min_length=6, max_length=20)
+
+    @field_validator("phone")
+    @classmethod
+    def validate_mainland_mobile(cls, value: str) -> str:
+        value = value.strip()
+        if not re.fullmatch(r"1[3-9]\d{9}", value):
+            raise ValueError("请填写 11 位中国大陆手机号")
+        return value
 
 
 class OrderCreateIn(BaseModel):
