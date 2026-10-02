@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     delivery_provider: str = "mock"
     tencent_map_key: Optional[str] = None
     external_request_timeout_seconds: float = 5.0
+    payment_provider: str = "mock"
+    wechat_pay_mchid: Optional[str] = None
+    wechat_pay_appid: Optional[str] = None
+    wechat_pay_api_v3_key: Optional[str] = None
+    wechat_pay_platform_cert_path: Optional[str] = None
     admin_phones: str = "18785409634,18285424586"
 
     @property
@@ -33,6 +38,12 @@ class Settings(BaseSettings):
             raise ValueError("DELIVERY_PROVIDER must be mock or tencent_bicycling")
         if self.delivery_provider == "tencent_bicycling" and not self.tencent_map_key:
             raise ValueError("TENCENT_MAP_KEY is required for tencent_bicycling")
+        if self.payment_provider not in {"mock", "wechat_v3"}:
+            raise ValueError("PAYMENT_PROVIDER must be mock or wechat_v3")
+        if self.payment_provider == "wechat_v3":
+            required = (self.wechat_pay_mchid, self.wechat_pay_appid, self.wechat_pay_api_v3_key, self.wechat_pay_platform_cert_path)
+            if not all(required):
+                raise ValueError("WeChat Pay v3 configuration is incomplete")
 
 
 @lru_cache

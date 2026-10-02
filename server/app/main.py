@@ -3,7 +3,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 from uuid import uuid4
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 from .config import get_settings
@@ -14,6 +14,7 @@ from .services.order_audit import record_order_audit
 from .services.delivery import build_distance_provider
 from .services.order_events import enqueue_receipt_print, process_pending_prints
 from .services.printer import MockPrinter
+from .services.payment import PaymentVerificationError, WechatPayV3CallbackVerifier, confirm_payment
 from .observability import configure_logging, request_log_middleware
 
 settings = get_settings()
@@ -160,16 +161,29 @@ def mock_payment_callback(order_id: int, _: None = Depends(require_development),
     """Development stand-in for a verified WeChat payment callback; deliberately idempotent."""
     order = query_order(db, order_id)
     if order.payment_status == PaymentStatus.UNPAID:
-        previous_status = order.status.value
-        order.status, order.payment_status, order.paid_at = OrderStatus.PAID, PaymentStatus.PAID, datetime.now()
-        order.payment_provider = "mock"
-        order.payment_transaction_id = f"mock-{order.order_no}"
-        enqueue_receipt_print(db, order)
-        record_order_audit(db, order, "PAYMENT_CONFIRMED", from_status=previous_status, to_status=order.status.value)
-        db.commit()
+        confirm_payment(db, order, "mock", f"mock-{order.order_no}")
         # In production this dispatch happens in a worker after the verified callback has returned 204.
         process_pending_prints(db, printer, order.id)
     return query_order(db, order_id)
+
+
+@app.post("/api/payments/wechat/notify", status_code=204)
+async def wechat_payment_notify(request: Request, db: Session = Depends(get_db)):
+    """Real-payment callback: verify, persist payment once, then acknowledge without printing inline."""
+    if settings.payment_provider != "wechat_v3":
+        raise HTTPException(404, "Not Found")
+    try:
+        verifier = WechatPayV3CallbackVerifier(settings.wechat_pay_api_v3_key or "", settings.wechat_pay_platform_cert_path or "")
+        payload = verifier.verify_and_decrypt(request.headers, await request.body())
+        if payload.get("trade_state") != "SUCCESS" or payload.get("appid") != settings.wechat_pay_appid or payload.get("mchid") != settings.wechat_pay_mchid:
+            raise PaymentVerificationError("unexpected payment callback payload")
+        order = db.scalar(select(Order).where(Order.order_no == payload.get("out_trade_no")))
+        if not order or payload.get("amount", {}).get("total") != int(order.total_amount * 100):
+            raise PaymentVerificationError("order or amount verification failed")
+        confirm_payment(db, order, "wechat_v3", payload["transaction_id"])
+    except PaymentVerificationError as error:
+        raise HTTPException(400, "invalid payment callback") from error
+    return Response(status_code=204)
 
 
 @app.get("/api/orders/mine", response_model=list[OrderOut])

@@ -38,6 +38,8 @@ uvicorn app.main:app --reload --port 8000
 
 默认 `DELIVERY_PROVIDER=mock` 使用开发期模拟骑行距离。申请腾讯位置服务 Key 后，在服务器 `.env` 设置 `DELIVERY_PROVIDER=tencent_bicycling` 与 `TENCENT_MAP_KEY`，重启 API 即可改用腾讯骑行道路距离；Key 仅保留在服务器环境变量，绝不写进小程序代码或提交到 Git。
 
+微信支付申请完成后，使用 `PAYMENT_PROVIDER=wechat_v3`，并在服务器环境变量填入商户号、小程序 AppID、32 字节 API v3 Key 和微信支付平台证书本地路径。`POST /api/payments/wechat/notify` 会先验签和 AES-GCM 解密，再核对订单号、商户号、AppID、交易状态与金额；仅验证通过才落库支付状态。回调不直接打印，而是写入既有打印事件，避免慢打印拖延微信回调。
+
 商家订单页打开时每 10 秒刷新一次，离开页面即停止；也可以下拉立即刷新。小店首版采用轮询，部署和故障排查都比常驻 WebSocket 简单；订单量或店员数量增长后可无缝替换为 WebSocket/SSE 推送。
 
 ## 直接测试后端（不需要微信开发者工具）

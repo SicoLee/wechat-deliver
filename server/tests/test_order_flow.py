@@ -126,3 +126,13 @@ def test_tencent_cycling_provider_reads_road_distance_without_leaking_key():
     with httpx.Client(transport=transport) as client:
         provider = TencentBicyclingDistanceProvider("test-key", client=client)
         assert provider.distance_km(26.45, 106.98, 26.47, 106.95) == 3.25
+
+
+def test_wechat_payment_provider_requires_complete_credentials():
+    settings = Settings(payment_provider="wechat_v3")
+    try:
+        settings.validate_runtime()
+    except ValueError as error:
+        assert "WeChat Pay v3 configuration is incomplete" in str(error)
+    else:
+        raise AssertionError("partial WeChat Pay configuration must be rejected")
