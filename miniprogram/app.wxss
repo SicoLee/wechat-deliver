@@ -54,3 +54,10 @@ page { background:#f5f5f7; color:#1d1d1f; font-family:-apple-system,BlinkMacSyst
 .product-actions .btn { min-width:0; padding:0 18rpx; }
 .editing-actions { display:flex; gap:14rpx; margin-top:24rpx; }
 .editing-actions .btn { flex:1; }
+.detail-list { margin-top:22rpx; }
+.detail-row { padding:14rpx 0; }
+.detail-divider { height:1rpx; background:#e5e5ea; margin:12rpx 0; }
+.detail-summary { padding:26rpx 28rpx; }
+.delivery-card { line-height:1.55; }
+.detail-actions { display:flex; flex-direction:column; gap:16rpx; margin-top:24rpx; }
+.detail-actions .btn { width:100%; }
