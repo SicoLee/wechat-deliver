@@ -5,7 +5,7 @@ from uuid import uuid4
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session
 from ..models import EventStatus, Order, OrderEvent, PrintStatus
-from .printer import Printer
+from .printer import PrintResult, Printer
 
 
 PRINT_ORDER = "PRINT_ORDER"
@@ -30,7 +30,12 @@ def process_pending_prints(db: Session, printer: Printer, order_id: Optional[int
     for event in events:
         event.attempts += 1
         order = db.get(Order, event.order_id)
-        result = printer.print_order(order.order_no, event.idempotency_key)
+        try:
+            result = printer.print_order(order.order_no, event.idempotency_key)
+        except Exception:
+            # Vendor SDK/network faults must not terminate the worker loop or leak
+            # provider internals into order data visible to staff.
+            result = PrintResult(False, "打印服务暂不可用")
         if result.success:
             event.status, event.processed_at, event.last_error, event.next_attempt_at = EventStatus.SUCCEEDED, now, None, None
             order.print_status = PrintStatus.SUCCESS

@@ -230,6 +230,21 @@ def test_failed_print_retries_before_becoming_terminal():
         assert event.status == EventStatus.FAILED
 
 
+def test_print_vendor_exception_becomes_a_retryable_event():
+    class ExplodingPrinter:
+        def print_order(self, *_):
+            raise RuntimeError("vendor credential leaked in an exception")
+
+    with SessionLocal() as db:
+        order = db.scalar(select(main_module.Order).limit(1))
+        event = enqueue_receipt_print(db, order)
+        db.commit()
+        assert process_pending_prints(db, ExplodingPrinter(), order.id, max_attempts=2, retry_delay_seconds=60) == 1
+        db.refresh(event)
+        assert event.status == EventStatus.PENDING
+        assert event.last_error == "打印服务暂不可用"
+
+
 def test_tiered_delivery_pricing_preserves_distance_boundaries():
     tiers = [(2.0, Decimal("2.00")), (4.0, Decimal("4.00")), (6.0, Decimal("7.00"))]
     assert calculate_delivery_fee(2.0, "tiered", Decimal("0"), tiers) == Decimal("2.00")
