@@ -11,13 +11,13 @@ from .db import get_db
 from .models import Admin, Order, OrderAuditLog, OrderItem, OrderStatus, PaymentStatus, PrintStatus, Product
 from .schemas import OrderAuditOut, OrderCreateIn, OrderOut, ProductCreateIn, ProductOut, ProductUpdateIn
 from .services.order_audit import record_order_audit
-from .services.delivery import MockCyclingDistanceProvider
+from .services.delivery import build_distance_provider
 from .services.order_events import enqueue_receipt_print, process_pending_prints
 from .services.printer import MockPrinter
 from .observability import configure_logging, request_log_middleware
 
 settings = get_settings()
-distance_provider = MockCyclingDistanceProvider()
+distance_provider = build_distance_provider(settings.delivery_provider, settings.tencent_map_key, settings.external_request_timeout_seconds)
 printer = MockPrinter()
 
 
@@ -130,7 +130,7 @@ def bind_admin(phone: str, openid: str = Depends(openid_from_header), db: Sessio
 @app.get("/api/delivery/quote")
 def delivery_quote(latitude: float, longitude: float):
     distance = distance_provider.distance_km(settings.shop_latitude, settings.shop_longitude, latitude, longitude)
-    return {"distance_km": distance, "delivery_fee": settings.delivery_fee, "distance_source": "mock_cycling_development"}
+    return {"distance_km": distance, "delivery_fee": settings.delivery_fee, "distance_source": settings.delivery_provider}
 
 
 @app.post("/api/orders", response_model=OrderOut)

@@ -20,6 +20,7 @@
 - CI 固定 Ubuntu 24.04，避免 `ubuntu-latest` 自动迁移改变构建环境。
 - 非 root Docker 运行镜像、PostgreSQL 健康检查与迁移后启动部署流程。
 - 商家商品新增、编辑和上下架 API。
+- 腾讯地图骑行道路距离适配器与可切换配送距离提供方。
 
 ### Verified
 

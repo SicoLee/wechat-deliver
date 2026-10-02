@@ -12,6 +12,7 @@ from sqlalchemy import select  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.config import Settings  # noqa: E402
+from app.services.delivery import TencentBicyclingDistanceProvider  # noqa: E402
 from app.models import EventStatus, OrderEvent  # noqa: E402
 
 
@@ -117,3 +118,11 @@ def test_admin_can_manage_products_and_customers_only_see_enabled_products():
         customer_products = client.get("/api/products").json()
         assert product["id"] not in [item["id"] for item in customer_products]
         assert client.post("/api/admin/products", headers=headers, json={"name": "手作酸梅汤", "price": "5.00"}).status_code == 409
+
+
+def test_tencent_cycling_provider_reads_road_distance_without_leaking_key():
+    import httpx
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, json={"status": 0, "result": {"routes": [{"distance": 3250}]}}))
+    with httpx.Client(transport=transport) as client:
+        provider = TencentBicyclingDistanceProvider("test-key", client=client)
+        assert provider.distance_km(26.45, 106.98, 26.47, 106.95) == 3.25

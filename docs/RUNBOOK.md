@@ -36,6 +36,8 @@ uvicorn app.main:app --reload --port 8000
 
 商品管理 API 现已可用：`GET /api/admin/products`、`POST /api/admin/products`、`PATCH /api/admin/products/{id}`。它们均要求商家权限；顾客菜单接口只返回 `enabled=true` 的商品。小程序商品管理页面会在菜单/图片资料确定后再接入，避免先做一套你不用的复杂后台。
 
+默认 `DELIVERY_PROVIDER=mock` 使用开发期模拟骑行距离。申请腾讯位置服务 Key 后，在服务器 `.env` 设置 `DELIVERY_PROVIDER=tencent_bicycling` 与 `TENCENT_MAP_KEY`，重启 API 即可改用腾讯骑行道路距离；Key 仅保留在服务器环境变量，绝不写进小程序代码或提交到 Git。
+
 商家订单页打开时每 10 秒刷新一次，离开页面即停止；也可以下拉立即刷新。小店首版采用轮询，部署和故障排查都比常驻 WebSocket 简单；订单量或店员数量增长后可无缝替换为 WebSocket/SSE 推送。
 
 ## 直接测试后端（不需要微信开发者工具）
