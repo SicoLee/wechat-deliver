@@ -1,0 +1,24 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install -r server/requirements.txt pytest httpx
+      - name: Compile backend
+        run: python -m compileall -q server/app
+      - name: Run API flow tests
+        run: cd server && pytest -q
+      - name: Check mini-program JavaScript syntax
+        run: find miniprogram -name '*.js' -print0 | xargs -0 -n1 node --check
