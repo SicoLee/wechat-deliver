@@ -86,3 +86,17 @@ def test_production_rejects_mock_integration_configuration():
         assert "Production startup is blocked" in str(error)
     else:
         raise AssertionError("production must not accept mock providers")
+
+
+def test_order_rejects_duplicate_products_and_invalid_coordinates():
+    with TestClient(app) as client:
+        duplicate = client.post(
+            "/api/orders", headers={"X-OpenID": "test-customer"},
+            json={"items": [{"product_id": 1, "quantity": 1}, {"product_id": 1, "quantity": 2}], "address": {"name": "测试", "detail": "1号", "latitude": 26, "longitude": 106, "phone": "13800000000"}},
+        )
+        assert duplicate.status_code == 422
+        invalid_location = client.post(
+            "/api/orders", headers={"X-OpenID": "test-customer"},
+            json={"items": [{"product_id": 1, "quantity": 1}], "address": {"name": "测试", "detail": "1号", "latitude": 99, "longitude": 106, "phone": "13800000000"}},
+        )
+        assert invalid_location.status_code == 422

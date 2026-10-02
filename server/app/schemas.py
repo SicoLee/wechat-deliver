@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from .models import OrderStatus, PaymentStatus, PrintStatus
 
 
@@ -13,15 +13,22 @@ class CartItemIn(BaseModel):
 class AddressIn(BaseModel):
     name: str = Field(min_length=1, max_length=50)
     detail: str = Field(min_length=1, max_length=200)
-    latitude: float
-    longitude: float
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
     phone: str = Field(min_length=6, max_length=20)
 
 
 class OrderCreateIn(BaseModel):
-    items: list[CartItemIn] = Field(min_length=1)
+    items: list[CartItemIn] = Field(min_length=1, max_length=30)
     address: AddressIn
     remark: Optional[str] = Field(default=None, max_length=300)
+
+    @model_validator(mode="after")
+    def product_ids_are_unique(self):
+        product_ids = [item.product_id for item in self.items]
+        if len(product_ids) != len(set(product_ids)):
+            raise ValueError("同一商品只能出现在购物车中一次")
+        return self
 
 
 class ProductOut(BaseModel):
