@@ -22,10 +22,11 @@ cp .env.example .env
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+alembic upgrade head
 uvicorn app.main:app --reload --port 8000
 ```
 
-第一次启动会自动创建 `server/data/dev.db` 并写入 5 个预设商品。接口文档在 <http://127.0.0.1:8000/docs>，健康检查在 <http://127.0.0.1:8000/api/health>。
+`alembic upgrade head` 会创建 `server/data/dev.db` 和表结构；API 启动后写入 5 个预设商品。接口文档在 <http://127.0.0.1:8000/docs>，健康检查在 <http://127.0.0.1:8000/api/health>。
 
 ## 直接测试后端（不需要微信开发者工具）
 
@@ -58,7 +59,7 @@ docker compose up -d
 DATABASE_URL=postgresql+psycopg://wechat_deliver:change-me-before-production@127.0.0.1:5432/wechat_deliver
 ```
 
-重启 API 即会建表。生产环境应改用迁移工具（Alembic），不要依赖自动建表。
+执行 `alembic upgrade head` 后再重启 API。项目从现在开始使用 Alembic 迁移，不依赖应用启动时自动建表。
 
 ## 上线前必须替换的模拟能力
 

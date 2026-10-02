@@ -1,13 +1,12 @@
 from datetime import datetime
 from decimal import Decimal
-from pathlib import Path
 from typing import Optional
 from uuid import uuid4
 from fastapi import Depends, FastAPI, Header, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 from .config import get_settings
-from .db import Base, engine, get_db
+from .db import get_db
 from .models import Admin, Order, OrderItem, OrderStatus, PaymentStatus, PrintStatus, Product
 from .schemas import OrderCreateIn, OrderOut, ProductOut
 from .services.delivery import MockCyclingDistanceProvider
@@ -35,9 +34,6 @@ def seed_products(db: Session) -> None:
 
 @app.on_event("startup")
 def startup() -> None:
-    if settings.database_url.startswith("sqlite"):
-        Path("data").mkdir(exist_ok=True)
-    Base.metadata.create_all(engine)
     with next(get_db()) as db:
         seed_products(db)
 

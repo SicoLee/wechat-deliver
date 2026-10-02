@@ -8,9 +8,13 @@ TEST_DB.unlink(missing_ok=True)
 
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import select  # noqa: E402
-from app.db import SessionLocal  # noqa: E402
+from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import EventStatus, OrderEvent  # noqa: E402
+
+
+def setup_module():
+    Base.metadata.create_all(engine)
 
 
 def test_paid_order_is_visible_to_admin_and_can_progress():
