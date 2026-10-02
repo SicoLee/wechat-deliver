@@ -1,3 +1,4 @@
-<view class="page"><view wx:if="{{!cart.length}}" class="card muted">购物车还是空的，先去选菜吧。</view>
-<view wx:for="{{cart}}" wx:key="id" class="card"><view class="row"><view><view>{{item.name}}</view><view class="price">¥{{item.price}}</view></view><view class="row"><view class="btn secondary" data-id="{{item.id}}" bindtap="minus">−</view><view>× {{item.quantity}}</view><view class="btn" data-id="{{item.id}}" bindtap="plus">+</view></view></view></view>
-<view wx:if="{{cart.length}}" class="fixed-bottom"><view>商品 <text class="price">¥{{total}}</text></view><view class="btn" bindtap="checkout">填写地址</view></view></view>
+<view class="page"><view class="hero"><view class="title">购物车</view><view class="muted hero-meta">确认一下，马上就能下单。</view></view>
+<view wx:if="{{!cart.length}}" class="card empty-state"><view class="empty-title">还没有选菜</view><view class="muted">回到菜单，选一碗喜欢的粉吧。</view></view>
+<view wx:for="{{cart}}" wx:key="id" class="card menu-item"><view class="row"><view><view class="menu-name">{{item.name}}</view><view class="price menu-price">¥{{item.price}}</view></view><view class="quantity-control"><view class="btn quantity-button" data-id="{{item.id}}" bindtap="minus">−</view><view class="quantity-value">{{item.quantity}}</view><view class="btn quantity-button" data-id="{{item.id}}" bindtap="plus">+</view></view></view></view>
+<view wx:if="{{cart.length}}" class="fixed-bottom"><view class="total-label">商品合计 <text class="price">¥{{total}}</text></view><view class="btn" bindtap="checkout">填写地址</view></view></view>
