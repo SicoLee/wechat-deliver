@@ -69,6 +69,15 @@ DATABASE_URL=postgresql+psycopg://wechat_deliver:change-me-before-production@127
 
 执行 `alembic upgrade head` 后再重启 API。项目从现在开始使用 Alembic 迁移，不依赖应用启动时自动建表。
 
+## 用 Docker 启动部署环境
+
+1. 在服务器项目根目录执行 `cp .env.production.example .env`。
+2. 编辑 `.env`，至少将 `POSTGRES_PASSWORD` 与 `DATABASE_URL` 中的同一密码替换为随机强密码。
+3. 执行 `docker compose up -d --build`。
+4. 用 `docker compose ps` 确认 `postgres` 与 `api` 均为 healthy，再访问 `http://服务器地址:8000/api/health`。
+
+API 容器在启动前自动执行 `alembic upgrade head`，并以非 root 用户运行。此 compose 文件仅开放 API 的 8000 端口；正式上线时应由 Nginx/Caddy 提供 HTTPS 并只暴露 443。当前 `APP_ENV=production` 会按安全策略拒绝启动，直到真实支付、地图、打印供应商已完成接入；部署演练先保持 `development`。
+
 ## 上线前必须替换的模拟能力
 
 | 当前开发实现 | 正式替换点 |

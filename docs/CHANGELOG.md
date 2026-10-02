@@ -18,6 +18,7 @@
 - 商家订单页可见期间的 10 秒轻量轮询与下拉刷新。
 - GitHub Actions 基础 Action 升级至当前主版本。
 - CI 固定 Ubuntu 24.04，避免 `ubuntu-latest` 自动迁移改变构建环境。
+- 非 root Docker 运行镜像、PostgreSQL 健康检查与迁移后启动部署流程。
 
 ### Verified
 
