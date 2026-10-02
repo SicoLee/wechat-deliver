@@ -96,6 +96,16 @@ def test_production_rejects_mock_integration_configuration():
         raise AssertionError("production must not accept mock providers")
 
 
+def test_development_admin_binding_shortcut_is_not_available_in_production(monkeypatch):
+    monkeypatch.setattr(main_module.settings, "app_env", "production")
+    try:
+        main_module.require_development()
+    except Exception as error:
+        assert getattr(error, "status_code", None) == 404
+    else:
+        raise AssertionError("production must not accept raw phone binding")
+
+
 def test_order_rejects_duplicate_products_and_invalid_coordinates():
     with TestClient(app) as client:
         duplicate = client.post(

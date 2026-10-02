@@ -144,8 +144,8 @@ def update_product(product_id: int, payload: ProductUpdateIn, _: str = Depends(r
 
 
 @app.post("/api/auth/admin-bind")
-def bind_admin(phone: str, openid: str = Depends(openid_from_header), db: Session = Depends(get_db)):
-    """Production calls this only after verifying the one-time WeChat phone credential server-side."""
+def bind_admin(phone: str, _: None = Depends(require_development), openid: str = Depends(openid_from_header), db: Session = Depends(get_db)):
+    """Development-only convenience; production must verify WeChat's phone credential first."""
     if phone not in settings.allowed_admin_phones:
         raise HTTPException(403, "该手机号不在商家白名单")
     existing = db.scalar(select(Admin).where(Admin.phone == phone))
