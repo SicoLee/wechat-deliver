@@ -8,9 +8,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 from .config import get_settings
 from .db import Base, engine, get_db
-from .models import Admin, Order, OrderItem, OrderStatus, PrintStatus, Product
+from .models import Admin, Order, OrderItem, OrderStatus, PaymentStatus, PrintStatus, Product
 from .schemas import OrderCreateIn, OrderOut, ProductOut
 from .services.delivery import MockCyclingDistanceProvider
+from .services.order_events import enqueue_receipt_print, process_pending_prints
 from .services.printer import MockPrinter
 
 settings = get_settings()
@@ -116,11 +117,14 @@ def create_order(payload: OrderCreateIn, openid: str = Depends(openid_from_heade
 def mock_payment_callback(order_id: int, db: Session = Depends(get_db)):
     """Development stand-in for a verified WeChat payment callback; deliberately idempotent."""
     order = query_order(db, order_id)
-    if order.status == OrderStatus.PENDING_PAYMENT:
-        order.status, order.paid_at = OrderStatus.PAID, datetime.now()
-        result = printer.print_order(order.order_no)
-        order.print_status = PrintStatus.SUCCESS if result.success else PrintStatus.FAILED
+    if order.payment_status == PaymentStatus.UNPAID:
+        order.status, order.payment_status, order.paid_at = OrderStatus.PAID, PaymentStatus.PAID, datetime.now()
+        order.payment_provider = "mock"
+        order.payment_transaction_id = f"mock-{order.order_no}"
+        enqueue_receipt_print(db, order)
         db.commit()
+        # In production this dispatch happens in a worker after the verified callback has returned 204.
+        process_pending_prints(db, printer, order.id)
     return query_order(db, order_id)
 
 
@@ -148,7 +152,7 @@ def change_order_status(order_id: int, status: OrderStatus, _: str = Depends(req
 @app.post("/api/admin/orders/{order_id}/reprint", response_model=OrderOut)
 def reprint(order_id: int, _: str = Depends(require_admin), db: Session = Depends(get_db)):
     order = query_order(db, order_id)
-    result = printer.print_order(order.order_no)
-    order.print_status = PrintStatus.SUCCESS if result.success else PrintStatus.FAILED
+    enqueue_receipt_print(db, order)
     db.commit()
+    process_pending_prints(db, printer, order.id)
     return query_order(db, order_id)

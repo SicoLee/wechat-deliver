@@ -9,5 +9,5 @@ class PrintResult:
 
 
 class MockPrinter:
-    def print_order(self, order_no: str) -> PrintResult:
+    def print_order(self, order_no: str, idempotency_key: str) -> PrintResult:
         return PrintResult(True, f"开发模拟打印成功：{order_no}")

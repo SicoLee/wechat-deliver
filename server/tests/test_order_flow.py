@@ -7,7 +7,10 @@ TEST_DB = Path("data/test.db")
 TEST_DB.unlink(missing_ok=True)
 
 from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import select  # noqa: E402
+from app.db import SessionLocal  # noqa: E402
 from app.main import app  # noqa: E402
+from app.models import EventStatus, OrderEvent  # noqa: E402
 
 
 def test_paid_order_is_visible_to_admin_and_can_progress():
@@ -36,12 +39,17 @@ def test_paid_order_is_visible_to_admin_and_can_progress():
         paid = client.post(f"/api/orders/{order['id']}/mock-payment-callback")
         assert paid.status_code == 200
         assert paid.json()["status"] == "PAID"
+        assert paid.json()["payment_status"] == "PAID"
         assert paid.json()["print_status"] == "SUCCESS"
 
         # Repeated payment notifications must not re-run the business transition.
         repeated = client.post(f"/api/orders/{order['id']}/mock-payment-callback")
         assert repeated.status_code == 200
         assert repeated.json()["status"] == "PAID"
+        with SessionLocal() as db:
+            events = db.scalars(select(OrderEvent).where(OrderEvent.order_id == order["id"])).all()
+            assert len(events) == 1
+            assert events[0].status == EventStatus.SUCCEEDED
 
         bind = client.post("/api/auth/admin-bind?phone=18785409634", headers={"X-OpenID": "test-admin"})
         assert bind.status_code == 200

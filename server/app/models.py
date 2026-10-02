@@ -21,6 +21,17 @@ class PrintStatus(str, Enum):
     FAILED = "FAILED"
 
 
+class PaymentStatus(str, Enum):
+    UNPAID = "UNPAID"
+    PAID = "PAID"
+
+
+class EventStatus(str, Enum):
+    PENDING = "PENDING"
+    SUCCEEDED = "SUCCEEDED"
+    FAILED = "FAILED"
+
+
 class Product(Base):
     __tablename__ = "products"
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -54,10 +65,14 @@ class Order(Base):
     phone: Mapped[str] = mapped_column(String(20))
     remark: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[OrderStatus] = mapped_column(SqlEnum(OrderStatus), default=OrderStatus.PENDING_PAYMENT)
+    payment_status: Mapped[PaymentStatus] = mapped_column(SqlEnum(PaymentStatus), default=PaymentStatus.UNPAID)
+    payment_provider: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    payment_transaction_id: Mapped[Optional[str]] = mapped_column(String(80), unique=True, nullable=True)
     print_status: Mapped[PrintStatus] = mapped_column(SqlEnum(PrintStatus), default=PrintStatus.NOT_PRINTED)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+    events: Mapped[list["OrderEvent"]] = relationship(back_populates="order", cascade="all, delete-orphan")
 
 
 class OrderItem(Base):
@@ -69,3 +84,18 @@ class OrderItem(Base):
     unit_price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     quantity: Mapped[int] = mapped_column(Integer)
     order: Mapped[Order] = relationship(back_populates="items")
+
+
+class OrderEvent(Base):
+    """Durable outbox/audit trail for side effects such as receipt printing."""
+    __tablename__ = "order_events"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), index=True)
+    event_type: Mapped[str] = mapped_column(String(40))
+    idempotency_key: Mapped[str] = mapped_column(String(64), unique=True)
+    status: Mapped[EventStatus] = mapped_column(SqlEnum(EventStatus), default=EventStatus.PENDING)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    order: Mapped[Order] = relationship(back_populates="events")

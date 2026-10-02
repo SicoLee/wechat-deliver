@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Optional
 from pydantic import BaseModel, Field
-from .models import OrderStatus, PrintStatus
+from .models import OrderStatus, PaymentStatus, PrintStatus
 
 
 class CartItemIn(BaseModel):
@@ -52,6 +52,7 @@ class OrderOut(BaseModel):
     phone: str
     remark: Optional[str]
     status: OrderStatus
+    payment_status: PaymentStatus
     print_status: PrintStatus
     created_at: datetime
     items: list[OrderItemOut]
