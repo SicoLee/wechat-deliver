@@ -24,3 +24,9 @@ page { background:#f5f5f7; color:#1d1d1f; font-family:-apple-system,BlinkMacSyst
 .quantity-value { min-width:42rpx; color:#1d1d1f; font-size:27rpx; font-weight:650; text-align:center; font-variant-numeric:tabular-nums; }
 .empty-state { padding:80rpx 32rpx; text-align:center; }
 .empty-title { font-size:34rpx; font-weight:700; letter-spacing:-.4rpx; margin-bottom:12rpx; }
+.address-actions { display:flex; gap:14rpx; margin-top:24rpx; }
+.address-actions .btn { flex:1; padding:0 16rpx; }
+.address-selected { margin-top:24rpx; padding:18rpx 20rpx; background:#f5f9ff; border-radius:16rpx; color:#0071e3; font-size:25rpx; line-height:1.45; }
+.form-label { display:block; margin:26rpx 0 4rpx; color:#86868b; font-size:24rpx; }
+.quote-card { padding:24rpx 28rpx; }
+.note-card textarea { width:100%; min-height:72rpx; font-size:29rpx; line-height:1.5; }

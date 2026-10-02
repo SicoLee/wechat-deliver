@@ -1,12 +1,12 @@
 <view class="page">
-  <view class="card"><view class="title">收货地址</view><view class="muted">请先选地图位置，再补全门牌号</view>
-    <view class="btn secondary" style="margin-top:20rpx" bindtap="chooseLocation">地图选地点</view>
-    <view class="btn secondary" style="margin-top:16rpx" bindtap="useCurrentLocation">使用当前位置</view>
-    <view wx:if="{{location.name}}" class="muted" style="margin-top:16rpx">{{location.name}} · {{location.latitude}}, {{location.longitude}}</view>
-    <input placeholder="小区 / 楼栋 / 楼层 / 门牌号" value="{{detail}}" bindinput="inputDetail" style="border-bottom:1rpx solid #eee;padding:22rpx 0"/>
-    <input placeholder="收货联系电话（11位手机号）" type="number" maxlength="11" value="{{phone}}" bindinput="inputPhone" style="border-bottom:1rpx solid #eee;padding:22rpx 0"/>
+  <view class="hero"><view class="title">确认配送</view><view class="muted hero-meta">选好地址，我们会计算配送费。</view></view>
+  <view class="card"><view class="section-title" style="margin-top:0">收货地址</view><view class="muted">先选地点，再补全门牌号。</view>
+    <view class="address-actions"><view class="btn secondary" bindtap="chooseLocation">地图选地点</view><view class="btn secondary" bindtap="useCurrentLocation">当前位置</view></view>
+    <view wx:if="{{location.name}}" class="address-selected">{{location.name}}<view class="muted">{{location.latitude}}, {{location.longitude}}</view></view>
+    <text class="form-label">详细门牌号</text><input class="input-line" placeholder="小区 / 楼栋 / 楼层 / 门牌号" value="{{detail}}" bindinput="inputDetail"/>
+    <text class="form-label">联系电话</text><input class="input-line" placeholder="11 位手机号" type="number" maxlength="11" value="{{phone}}" bindinput="inputPhone"/>
   </view>
-  <view class="card"><view>配送费 <text class="price">{{quoteReady ? '¥' + deliveryFee : deliveryFee}}</text></view><view wx:if="{{distance}}" class="muted">{{distanceSource === 'mock' ? '模拟骑行距离' : '骑行道路距离'}} {{distance}} km</view><view wx:if="{{quoteError}}" class="muted" style="color:#c0392b">{{quoteError}}；请重新选择地点后再试</view></view>
-  <view class="card"><textarea placeholder="备注，例如：不要辣" value="{{remark}}" bindinput="inputRemark" auto-height/></view>
-  <view class="fixed-bottom"><view>合计 <text class="price">¥{{total}}</text></view><view class="btn" bindtap="submit">{{submitting ? '提交中…' : '模拟微信支付'}}</view></view>
+  <view class="card quote-card"><view class="row"><view>配送费</view><view class="price">{{quoteReady ? '¥' + deliveryFee : deliveryFee}}</view></view><view wx:if="{{distance}}" class="muted" style="margin-top:8rpx">{{distanceSource === 'mock' ? '模拟骑行距离' : '骑行道路距离'}} {{distance}} km</view><view wx:if="{{quoteError}}" class="muted" style="color:#c0392b;margin-top:8rpx">{{quoteError}}；请重新选择地点后再试</view></view>
+  <view class="card note-card"><view class="section-title" style="margin:0 0 14rpx">备注</view><textarea placeholder="例如：不要辣" value="{{remark}}" bindinput="inputRemark" auto-height/></view>
+  <view class="fixed-bottom"><view class="total-label">合计 <text class="price">¥{{total}}</text></view><view class="btn" bindtap="submit">{{submitting ? '提交中…' : '微信支付'}}</view></view>
 </view>
