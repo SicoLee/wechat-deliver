@@ -206,7 +206,9 @@ def create_order(payload: OrderCreateIn, x_idempotency_key: Optional[str] = Head
     except DeliveryUnavailable as error:
         raise HTTPException(400, str(error)) from error
     order = Order(
-        order_no=datetime.now().strftime("%Y%m%d%H%M%S") + uuid4().hex[:4].upper(), openid=openid,
+        # Timestamp keeps receipts readable; 8 random hex characters make collisions
+        # impractical even if several checkouts land in the same second.
+        order_no=datetime.now().strftime("%Y%m%d%H%M%S") + uuid4().hex[:8].upper(), openid=openid,
         client_request_id=client_request_id,
         goods_amount=goods, delivery_fee=delivery_fee, total_amount=goods + delivery_fee,
         address=f"{payload.address.name} {payload.address.detail}", latitude=payload.address.latitude,

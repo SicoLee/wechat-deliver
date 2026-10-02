@@ -53,6 +53,7 @@ def test_paid_order_is_visible_to_admin_and_can_progress():
         )
         assert created.status_code == 200
         order = created.json()
+        assert len(order["order_no"]) == 22
         assert order["status"] == "PENDING_PAYMENT"
         assert order["delivery_fee"] == "2.00"
         assert client.get(f"/api/orders/{order['id']}", headers={"X-OpenID": "test-customer"}).status_code == 200
