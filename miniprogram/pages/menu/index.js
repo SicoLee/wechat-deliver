@@ -1,7 +1,9 @@
 const api = require('../../utils/api'); const cartApi = require('../../utils/cart')
 Page({
-  data:{products:[], cartCount:0, goodsTotal:'0.00',loading:true},
-  onShow(){ this.refreshCart(); this.setData({loading:true}); api.request('/products').then(products=>this.setData({products,loading:false})).catch(()=>{this.setData({loading:false});wx.showToast({title:'菜单暂时无法加载',icon:'none'})}) },
+  data:{products:[], cartCount:0, goodsTotal:'0.00',loading:true,loadError:''},
+  onShow(){ this.refreshCart(); this.loadProducts() },
+  loadProducts(){this.setData({loading:true,loadError:''});api.request('/products').then(products=>this.setData({products,loading:false})).catch(error=>this.setData({loading:false,loadError:error.detail||'菜单暂时无法加载，请检查网络后重试。'}))},
+  retry(){this.loadProducts()},
   refreshCart(){ const cart=cartApi.getCart(); this.setData({cartCount:cart.reduce((s,x)=>s+x.quantity,0),goodsTotal:cartApi.total(cart).toFixed(2)}) },
   add(e){ const product=this.data.products.find(x=>x.id===e.currentTarget.dataset.id); cartApi.add(product); this.refreshCart(); wx.showToast({title:'已加入'}) },
   goCart(){ wx.navigateTo({url:'/pages/cart/index'}) },

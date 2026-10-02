@@ -2,7 +2,8 @@
   <view class="hero"><view class="row"><view class="title">今天，吃点好的。</view><view class="nav-link" bindtap="goOrders">订单</view></view><view class="muted hero-meta">立即配送 · 配送费结算时计算</view></view>
   <view class="section-title">菜单</view>
   <view wx:if="{{loading}}" class="card empty-state"><view class="muted">正在加载菜单…</view></view>
-  <view wx:if="{{!loading&&!products.length}}" class="card empty-state"><view class="empty-title">暂时没有可售商品</view><view class="muted">店家正在准备，晚点再来看看。</view></view>
+  <view wx:if="{{loadError}}" class="card empty-state"><view class="empty-title">菜单暂时无法加载</view><view class="muted">{{loadError}}</view><view class="btn secondary retry-button" bindtap="retry">重新加载</view></view>
+  <view wx:if="{{!loading&&!loadError&&!products.length}}" class="card empty-state"><view class="empty-title">暂时没有可售商品</view><view class="muted">店家正在准备，晚点再来看看。</view></view>
   <view class="card menu-item" wx:for="{{products}}" wx:key="id">
     <view class="row"><view><view class="menu-name">{{item.name}}</view><view class="muted" style="margin-top:8rpx">{{item.category}}</view><view class="price menu-price">¥{{item.price}}</view></view><view class="btn" data-id="{{item.id}}" bindtap="add">加入</view></view>
   </view>
