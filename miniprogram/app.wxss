@@ -63,3 +63,9 @@ page { background:#f5f5f7; color:#1d1d1f; font-family:-apple-system,BlinkMacSyst
 .delivery-card { line-height:1.55; }
 .detail-actions { display:flex; flex-direction:column; gap:16rpx; margin-top:24rpx; }
 .detail-actions .btn { width:100%; }
+.order-progress-card { padding:26rpx 28rpx; }
+.status-progress { display:flex; gap:10rpx; }
+.status-step { flex:1; height:10rpx; border-radius:999rpx; background:#e5e5ea; }
+.status-step.is-active { background:#0071e3; }
+.status-labels { display:flex; justify-content:space-between; margin-top:14rpx; font-size:21rpx; }
+.status-hint { margin-top:22rpx; }
