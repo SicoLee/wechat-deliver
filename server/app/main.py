@@ -35,6 +35,7 @@ def seed_products(db: Session) -> None:
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
+    settings.validate_runtime()
     configure_logging(settings.log_level)
     with next(get_db()) as db:
         seed_products(db)
@@ -49,6 +50,11 @@ def openid_from_header(x_openid: Optional[str] = Header(default=None)) -> str:
     if not x_openid:
         raise HTTPException(401, "缺少 X-OpenID；小程序正式版应由 wx.login 换取")
     return x_openid
+
+
+def require_development() -> None:
+    if settings.app_env not in {"development", "test"}:
+        raise HTTPException(404, "Not Found")
 
 
 def require_admin(openid: str = Depends(openid_from_header), db: Session = Depends(get_db)) -> str:
@@ -117,7 +123,7 @@ def create_order(payload: OrderCreateIn, openid: str = Depends(openid_from_heade
 
 
 @app.post("/api/orders/{order_id}/mock-payment-callback", response_model=OrderOut)
-def mock_payment_callback(order_id: int, db: Session = Depends(get_db)):
+def mock_payment_callback(order_id: int, _: None = Depends(require_development), db: Session = Depends(get_db)):
     """Development stand-in for a verified WeChat payment callback; deliberately idempotent."""
     order = query_order(db, order_id)
     if order.payment_status == PaymentStatus.UNPAID:

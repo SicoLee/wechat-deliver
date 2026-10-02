@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import select  # noqa: E402
 from app.db import Base, SessionLocal, engine  # noqa: E402
 from app.main import app  # noqa: E402
+from app.config import Settings  # noqa: E402
 from app.models import EventStatus, OrderEvent  # noqa: E402
 
 
@@ -72,3 +73,13 @@ def test_customer_cannot_use_admin_endpoints():
     with TestClient(app) as client:
         response = client.get("/api/admin/orders", headers={"X-OpenID": "not-an-admin"})
         assert response.status_code == 403
+
+
+def test_production_rejects_mock_integration_configuration():
+    settings = Settings(app_env="production")
+    try:
+        settings.validate_runtime()
+    except ValueError as error:
+        assert "Production startup is blocked" in str(error)
+    else:
+        raise AssertionError("production must not accept mock providers")

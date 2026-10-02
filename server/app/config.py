@@ -18,6 +18,14 @@ class Settings(BaseSettings):
     def allowed_admin_phones(self) -> set[str]:
         return {phone.strip() for phone in self.admin_phones.split(",") if phone.strip()}
 
+    def validate_runtime(self) -> None:
+        if self.app_env not in {"development", "test", "production"}:
+            raise ValueError("APP_ENV must be development, test, or production")
+        if self.app_env == "production":
+            raise ValueError(
+                "Production startup is blocked until real WeChat Pay, Tencent Map, and cloud-printer providers are configured."
+            )
+
 
 @lru_cache
 def get_settings() -> Settings:
