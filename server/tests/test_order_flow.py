@@ -4,6 +4,7 @@ from pathlib import Path
 
 os.environ["DATABASE_URL"] = "sqlite:///./data/test.db"
 TEST_DB = Path("data/test.db")
+TEST_DB.parent.mkdir(parents=True, exist_ok=True)
 TEST_DB.unlink(missing_ok=True)
 
 from fastapi.testclient import TestClient  # noqa: E402
