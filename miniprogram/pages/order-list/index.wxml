@@ -1,6 +1,7 @@
 <view class="page">
   <view class="hero"><view class="title">我的订单</view><view class="muted hero-meta">随时查看配送进度。</view></view>
-  <view wx:if="{{!orders.length}}" class="card empty-state"><view class="empty-title">还没有订单</view><view class="muted">去菜单选一碗喜欢的粉吧。</view></view>
+  <view wx:if="{{loadError}}" class="card empty-state"><view class="empty-title">暂时无法获取订单</view><view class="muted">{{loadError}}</view></view>
+  <view wx:if="{{!orders.length&&!loadError}}" class="card empty-state"><view class="empty-title">还没有订单</view><view class="muted">去菜单选一碗喜欢的粉吧。</view></view>
   <view wx:for="{{orders}}" wx:key="id" class="card order-card" data-id="{{item.id}}" bindtap="detail">
     <view class="row"><view class="order-number" style="margin:0">#{{item.order_no}}</view><view class="price">¥{{item.total_amount}}</view></view>
     <view class="order-items muted" wx:for="{{item.items}}" wx:for-item="line" wx:key="product_id">{{line.product_name}} × {{line.quantity}}</view>
