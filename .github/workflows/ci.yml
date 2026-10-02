@@ -18,6 +18,8 @@ jobs:
         run: pip install -r server/requirements.txt pytest httpx
       - name: Compile backend
         run: python -m compileall -q server/app
+      - name: Verify fresh database migration
+        run: cd server && DATABASE_URL=sqlite:////tmp/wechat-deliver-migrate.db alembic upgrade head && DATABASE_URL=sqlite:////tmp/wechat-deliver-migrate.db alembic current
       - name: Run API flow tests
         run: cd server && pytest -q
       - name: Check mini-program JavaScript syntax
