@@ -1,0 +1,9 @@
+<view class="page">
+  <view class="card"><view class="title">添加商品</view>
+    <input placeholder="商品名称" value="{{name}}" bindinput="inputName" style="border-bottom:1rpx solid #eee;padding:18rpx 0"/>
+    <input placeholder="售价，例如 15.00" type="digit" value="{{price}}" bindinput="inputPrice" style="border-bottom:1rpx solid #eee;padding:18rpx 0"/>
+    <input placeholder="分类，例如 粉面" value="{{category}}" bindinput="inputCategory" style="border-bottom:1rpx solid #eee;padding:18rpx 0"/>
+    <view class="btn" style="margin-top:20rpx" bindtap="add">添加商品</view>
+  </view>
+  <view wx:for="{{products}}" wx:key="id" class="card"><view class="row"><view><view>{{item.name}}</view><view class="muted">{{item.category}} · ¥{{item.price}}</view></view><view class="btn {{item.enabled ? 'secondary' : ''}}" data-id="{{item.id}}" data-enabled="{{item.enabled}}" bindtap="toggle">{{item.enabled ? '下架' : '上架'}}</view></view></view>
+</view>

@@ -9,5 +9,6 @@ Page({
   load(fromPullDown=false){api.request('/admin/orders').then(orders=>this.setData({orders,loaded:true,lastUpdated:`更新于 ${new Date().toLocaleTimeString()}`})).catch(()=>this.setData({loaded:true})).finally(()=>{if(fromPullDown)wx.stopPullDownRefresh()})},
   startPolling(){this.stopPolling();this.pollTimer=setInterval(()=>this.load(),10000)},
   stopPolling(){if(this.pollTimer){clearInterval(this.pollTimer);this.pollTimer=null}},
+  products(){wx.navigateTo({url:'/pages/admin-products/index'})},
   detail(e){wx.navigateTo({url:'/pages/admin-order-detail/index?id='+e.currentTarget.dataset.id})}
 })
