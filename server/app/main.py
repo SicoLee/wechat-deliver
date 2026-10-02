@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 from .config import get_settings
 from .db import get_db
 from .models import Admin, Order, OrderAuditLog, OrderItem, OrderStatus, PaymentStatus, PrintStatus, Product
-from .schemas import OrderAuditOut, OrderCreateIn, OrderOut, ProductOut
+from .schemas import OrderAuditOut, OrderCreateIn, OrderOut, ProductCreateIn, ProductOut, ProductUpdateIn
 from .services.order_audit import record_order_audit
 from .services.delivery import MockCyclingDistanceProvider
 from .services.order_events import enqueue_receipt_print, process_pending_prints
@@ -79,6 +79,38 @@ def health():
 @app.get("/api/products", response_model=list[ProductOut])
 def products(db: Session = Depends(get_db)):
     return db.scalars(select(Product).where(Product.enabled.is_(True)).order_by(Product.id)).all()
+
+
+@app.get("/api/admin/products", response_model=list[ProductOut])
+def admin_products(_: str = Depends(require_admin), db: Session = Depends(get_db)):
+    return db.scalars(select(Product).order_by(Product.category, Product.id)).all()
+
+
+@app.post("/api/admin/products", response_model=ProductOut, status_code=201)
+def create_product(payload: ProductCreateIn, _: str = Depends(require_admin), db: Session = Depends(get_db)):
+    if db.scalar(select(Product.id).where(Product.name == payload.name)):
+        raise HTTPException(409, "商品名称已存在")
+    product = Product(**payload.model_dump())
+    db.add(product)
+    db.commit()
+    db.refresh(product)
+    return product
+
+
+@app.patch("/api/admin/products/{product_id}", response_model=ProductOut)
+def update_product(product_id: int, payload: ProductUpdateIn, _: str = Depends(require_admin), db: Session = Depends(get_db)):
+    product = db.get(Product, product_id)
+    if not product:
+        raise HTTPException(404, "商品不存在")
+    updates = payload.model_dump(exclude_unset=True)
+    if "name" in updates and updates["name"] != product.name:
+        if db.scalar(select(Product.id).where(Product.name == updates["name"])):
+            raise HTTPException(409, "商品名称已存在")
+    for field, value in updates.items():
+        setattr(product, field, value)
+    db.commit()
+    db.refresh(product)
+    return product
 
 
 @app.post("/api/auth/admin-bind")

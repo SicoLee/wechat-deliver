@@ -34,6 +34,8 @@ uvicorn app.main:app --reload --port 8000
 
 商家可通过 `GET /api/admin/orders/{order_id}/history` 查看订单操作历史。该记录用于排查“谁在何时变更状态或请求补打”，与后台重试用的打印事件分离。
 
+商品管理 API 现已可用：`GET /api/admin/products`、`POST /api/admin/products`、`PATCH /api/admin/products/{id}`。它们均要求商家权限；顾客菜单接口只返回 `enabled=true` 的商品。小程序商品管理页面会在菜单/图片资料确定后再接入，避免先做一套你不用的复杂后台。
+
 商家订单页打开时每 10 秒刷新一次，离开页面即停止；也可以下拉立即刷新。小店首版采用轮询，部署和故障排查都比常驻 WebSocket 简单；订单量或店员数量增长后可无缝替换为 WebSocket/SSE 推送。
 
 ## 直接测试后端（不需要微信开发者工具）

@@ -1,7 +1,7 @@
 from datetime import datetime
 from decimal import Decimal
 from typing import Optional
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from .models import OrderStatus, PaymentStatus, PrintStatus
 
 
@@ -37,7 +37,47 @@ class ProductOut(BaseModel):
     price: Decimal
     image: Optional[str]
     category: str
+    enabled: bool
     model_config = {"from_attributes": True}
+
+
+class ProductCreateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    price: Decimal = Field(gt=0, max_digits=10, decimal_places=2)
+    category: str = Field(default="招牌", min_length=1, max_length=40)
+    image: Optional[str] = Field(default=None, max_length=255)
+
+    @field_validator("name", "category")
+    @classmethod
+    def strip_required_text(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("不能为空")
+        return value
+
+
+class ProductUpdateIn(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=80)
+    price: Optional[Decimal] = Field(default=None, gt=0, max_digits=10, decimal_places=2)
+    category: Optional[str] = Field(default=None, min_length=1, max_length=40)
+    image: Optional[str] = Field(default=None, max_length=255)
+    enabled: Optional[bool] = None
+
+    @field_validator("name", "category")
+    @classmethod
+    def strip_optional_text(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        value = value.strip()
+        if not value:
+            raise ValueError("不能为空")
+        return value
+
+    @model_validator(mode="after")
+    def has_any_change(self):
+        if not self.model_fields_set:
+            raise ValueError("至少提供一个待更新字段")
+        return self
 
 
 class OrderItemOut(BaseModel):

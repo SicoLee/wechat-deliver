@@ -100,3 +100,20 @@ def test_order_rejects_duplicate_products_and_invalid_coordinates():
             json={"items": [{"product_id": 1, "quantity": 1}], "address": {"name": "测试", "detail": "1号", "latitude": 99, "longitude": 106, "phone": "13800000000"}},
         )
         assert invalid_location.status_code == 422
+
+
+def test_admin_can_manage_products_and_customers_only_see_enabled_products():
+    with TestClient(app) as client:
+        headers = {"X-OpenID": "test-admin"}
+        assert client.post("/api/auth/admin-bind?phone=18785409634", headers=headers).status_code == 200
+        created = client.post("/api/admin/products", headers=headers, json={"name": "  手作酸梅汤  ", "price": "5.00", "category": "饮品"})
+        assert created.status_code == 201
+        product = created.json()
+        assert product["name"] == "手作酸梅汤"
+        assert product["enabled"] is True
+        disabled = client.patch(f"/api/admin/products/{product['id']}", headers=headers, json={"enabled": False})
+        assert disabled.status_code == 200
+        assert disabled.json()["enabled"] is False
+        customer_products = client.get("/api/products").json()
+        assert product["id"] not in [item["id"] for item in customer_products]
+        assert client.post("/api/admin/products", headers=headers, json={"name": "手作酸梅汤", "price": "5.00"}).status_code == 409
