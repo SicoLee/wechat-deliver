@@ -26,6 +26,9 @@ def setup_module():
 
 def test_paid_order_is_visible_to_admin_and_can_progress():
     with TestClient(app) as client:
+        readiness = client.get("/api/ready")
+        assert readiness.status_code == 200
+        assert readiness.json()["database"] == "ready"
         products = client.get("/api/products")
         assert products.status_code == 200
         assert products.json()

@@ -5,7 +5,7 @@ import hmac
 from typing import Optional
 from uuid import uuid4
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session, selectinload
 from .config import get_settings
 from .db import get_db
@@ -91,6 +91,15 @@ def delivery_quote_for(latitude: float, longitude: float):
 @app.get("/api/health")
 def health():
     return {"ok": True, "env": settings.app_env, "payment_mode": "mock" if settings.app_env == "development" else "wechat"}
+
+
+@app.get("/api/ready")
+def readiness(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception as error:
+        raise HTTPException(503, "数据库暂不可用") from error
+    return {"ok": True, "database": "ready"}
 
 
 @app.get("/api/products", response_model=list[ProductOut])
