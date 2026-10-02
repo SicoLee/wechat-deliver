@@ -42,6 +42,8 @@ uvicorn app.main:app --reload --port 8000
 
 腾讯地图遇到网络超时、HTTP 错误或无法返回骑行路线时，报价和下单会返回 HTTP 503 与“地图距离服务暂不可用，请稍后重试”。该响应不会包含地图供应商原始报错、请求参数或 Key；顾客可保留地址后重试。
 
+结算页会在选点后重新报价。报价尚未完成或失败时，“支付”操作会明确提示等待/重选地点，且不会用上一个地址的配送费创建订单。
+
 默认 `DELIVERY_PRICING_MODE=fixed`，所有订单收取 `DELIVERY_FEE=2.00`。需要按道路距离收费时，将模式改成 `tiered` 并填写 `DELIVERY_DISTANCE_TIERS_JSON`；未匹配到任何距离档位时，报价和下单都会返回“超出配送范围”，历史订单金额不会被配置变更影响。
 
 微信支付申请完成后，使用 `PAYMENT_PROVIDER=wechat_v3`，并在服务器环境变量填入商户号、小程序 AppID、32 字节 API v3 Key 和微信支付平台证书本地路径。`POST /api/payments/wechat/notify` 会先验签和 AES-GCM 解密，再核对订单号、商户号、AppID、交易状态与金额；仅验证通过才落库支付状态。回调不直接打印，而是写入既有打印事件，避免慢打印拖延微信回调。
