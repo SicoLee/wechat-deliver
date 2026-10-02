@@ -38,7 +38,7 @@ uvicorn app.main:app --reload --port 8000
 
 商品管理 API 现已可用：`GET /api/admin/products`、`POST /api/admin/products`、`PATCH /api/admin/products/{id}`。它们均要求商家权限；顾客菜单接口只返回 `enabled=true` 的商品。
 
-小程序商家订单页已提供“商品管理”入口，可新增商品和切换上下架。第一版保持字段最小化（名称、售价、分类）；商品图片和规格选项等你提供真实菜单资料后再增加。
+小程序商家订单页已提供“商品管理”入口，可新增、编辑商品信息以及切换上下架。第一版保持字段最小化（名称、售价、分类）；商品图片和规格选项等你提供真实菜单资料后再增加。
 
 默认 `DELIVERY_PROVIDER=mock` 使用开发期模拟骑行距离。申请腾讯位置服务 Key 后，在服务器 `.env` 设置 `DELIVERY_PROVIDER=tencent_bicycling` 与 `TENCENT_MAP_KEY`，重启 API 即可改用腾讯骑行道路距离；Key 仅保留在服务器环境变量，绝不写进小程序代码或提交到 Git。
 
