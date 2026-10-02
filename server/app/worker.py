@@ -8,8 +8,9 @@ from .services.printer import MockPrinter
 
 
 def run_once() -> int:
+    settings = get_settings()
     with SessionLocal() as db:
-        return process_pending_prints(db, MockPrinter())
+        return process_pending_prints(db, MockPrinter(), max_attempts=settings.print_max_attempts, retry_delay_seconds=settings.print_retry_delay_seconds)
 
 
 def main() -> None:

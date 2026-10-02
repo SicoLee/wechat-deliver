@@ -18,6 +18,8 @@ from app.services.delivery import DeliveryProviderError, TencentBicyclingDistanc
 from app.worker import run_once  # noqa: E402
 from app.services.delivery_pricing import DeliveryUnavailable, calculate_delivery_fee  # noqa: E402
 from app.models import EventStatus, OrderEvent  # noqa: E402
+from app.services.order_events import enqueue_receipt_print, process_pending_prints  # noqa: E402
+from app.services.printer import PrintResult  # noqa: E402
 
 
 def setup_module():
@@ -206,6 +208,26 @@ def test_print_dispatch_job_requires_dedicated_server_token(monkeypatch):
 
 def test_worker_can_poll_an_empty_outbox():
     assert run_once() == 0
+
+
+def test_failed_print_retries_before_becoming_terminal():
+    class OfflinePrinter:
+        def print_order(self, *_):
+            return PrintResult(False, "printer offline")
+
+    with SessionLocal() as db:
+        order = db.scalar(select(main_module.Order).limit(1))
+        event = enqueue_receipt_print(db, order)
+        db.commit()
+        assert process_pending_prints(db, OfflinePrinter(), order.id, max_attempts=2, retry_delay_seconds=0) == 1
+        db.refresh(event)
+        assert event.attempts == 1
+        assert event.status == EventStatus.PENDING
+        assert event.next_attempt_at is not None
+        assert process_pending_prints(db, OfflinePrinter(), order.id, max_attempts=2, retry_delay_seconds=0) == 1
+        db.refresh(event)
+        assert event.attempts == 2
+        assert event.status == EventStatus.FAILED
 
 
 def test_tiered_delivery_pricing_preserves_distance_boundaries():

@@ -100,6 +100,7 @@ class OrderEvent(Base):
     status: Mapped[EventStatus] = mapped_column(SqlEnum(EventStatus), default=EventStatus.PENDING)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
     last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    next_attempt_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     order: Mapped[Order] = relationship(back_populates="events")

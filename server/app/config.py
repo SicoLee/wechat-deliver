@@ -27,6 +27,8 @@ class Settings(BaseSettings):
     wechat_pay_platform_cert_path: Optional[str] = None
     job_token: Optional[str] = None
     worker_poll_interval_seconds: float = Field(default=5.0, gt=0, le=300)
+    print_retry_delay_seconds: float = Field(default=30.0, gt=0, le=3600)
+    print_max_attempts: int = Field(default=5, ge=1, le=20)
     admin_phones: str = "18785409634,18285424586"
 
     @property

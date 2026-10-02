@@ -1,11 +1,17 @@
 """Printer seam. A production provider calls the selected cloud printer API here."""
 from dataclasses import dataclass
+from typing import Protocol
 
 
 @dataclass
 class PrintResult:
     success: bool
     message: str
+
+
+class Printer(Protocol):
+    def print_order(self, order_no: str, idempotency_key: str) -> PrintResult:
+        ...
 
 
 class MockPrinter:
