@@ -110,6 +110,17 @@ def test_order_rejects_duplicate_products_and_invalid_coordinates():
         assert invalid_location.status_code == 422
 
 
+def test_order_creation_is_idempotent_per_customer_request_key():
+    payload = {"items": [{"product_id": 1, "quantity": 1}], "address": {"name": "测试", "detail": "2号", "latitude": 26, "longitude": 106, "phone": "13800000000"}}
+    with TestClient(app) as client:
+        headers = {"X-OpenID": "retry-customer", "X-Idempotency-Key": "checkout-retry-001"}
+        first = client.post("/api/orders", headers=headers, json=payload)
+        second = client.post("/api/orders", headers=headers, json=payload)
+        assert first.status_code == second.status_code == 200
+        assert first.json()["id"] == second.json()["id"]
+        assert len(client.get("/api/orders/mine", headers={"X-OpenID": "retry-customer"}).json()) == 1
+
+
 def test_admin_can_manage_products_and_customers_only_see_enabled_products():
     with TestClient(app) as client:
         headers = {"X-OpenID": "test-admin"}

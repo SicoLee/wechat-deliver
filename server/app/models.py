@@ -2,7 +2,7 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
-from sqlalchemy import DateTime, Enum as SqlEnum, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import DateTime, Enum as SqlEnum, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .db import Base
 
@@ -52,9 +52,12 @@ class Admin(Base):
 
 class Order(Base):
     __tablename__ = "orders"
+    __table_args__ = (UniqueConstraint("openid", "client_request_id", name="uq_orders_openid_client_request_id"),)
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     order_no: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     openid: Mapped[str] = mapped_column(String(80), index=True)
+    # Non-null keys are supplied once per checkout and make client retries safe.
+    client_request_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     goods_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     delivery_fee: Mapped[Decimal] = mapped_column(Numeric(10, 2))
     total_amount: Mapped[Decimal] = mapped_column(Numeric(10, 2))

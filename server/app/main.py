@@ -6,6 +6,7 @@ from typing import Optional
 from uuid import uuid4
 from fastapi import Depends, FastAPI, Header, HTTPException, Request, Response
 from sqlalchemy import select, text
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 from .config import get_settings
 from .db import get_db
@@ -163,7 +164,15 @@ def delivery_quote(latitude: float, longitude: float):
 
 
 @app.post("/api/orders", response_model=OrderOut)
-def create_order(payload: OrderCreateIn, openid: str = Depends(openid_from_header), db: Session = Depends(get_db)):
+def create_order(payload: OrderCreateIn, x_idempotency_key: Optional[str] = Header(default=None), openid: str = Depends(openid_from_header), db: Session = Depends(get_db)):
+    """Create one order per retry key so network retries cannot duplicate a checkout."""
+    client_request_id = x_idempotency_key.strip() if x_idempotency_key else None
+    if client_request_id and len(client_request_id) > 64:
+        raise HTTPException(422, "X-Idempotency-Key 最长为 64 个字符")
+    if client_request_id:
+        existing = db.scalar(select(Order).where(Order.openid == openid, Order.client_request_id == client_request_id))
+        if existing:
+            return query_order(db, existing.id)
     product_ids = [item.product_id for item in payload.items]
     products_by_id = {p.id: p for p in db.scalars(select(Product).where(Product.id.in_(product_ids), Product.enabled.is_(True))).all()}
     if len(products_by_id) != len(set(product_ids)):
@@ -175,6 +184,7 @@ def create_order(payload: OrderCreateIn, openid: str = Depends(openid_from_heade
         raise HTTPException(400, str(error)) from error
     order = Order(
         order_no=datetime.now().strftime("%Y%m%d%H%M%S") + uuid4().hex[:4].upper(), openid=openid,
+        client_request_id=client_request_id,
         goods_amount=goods, delivery_fee=delivery_fee, total_amount=goods + delivery_fee,
         address=f"{payload.address.name} {payload.address.detail}", latitude=payload.address.latitude,
         longitude=payload.address.longitude, delivery_distance_km=distance, phone=payload.address.phone,
@@ -183,7 +193,14 @@ def create_order(payload: OrderCreateIn, openid: str = Depends(openid_from_heade
     order.items = [OrderItem(product_id=item.product_id, product_name=products_by_id[item.product_id].name,
                              unit_price=products_by_id[item.product_id].price, quantity=item.quantity) for item in payload.items]
     db.add(order)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        existing = db.scalar(select(Order).where(Order.openid == openid, Order.client_request_id == client_request_id))
+        if client_request_id and existing:
+            return query_order(db, existing.id)
+        raise
     return query_order(db, order.id)
 
 
