@@ -57,3 +57,12 @@ class OrderOut(BaseModel):
     created_at: datetime
     items: list[OrderItemOut]
     model_config = {"from_attributes": True}
+
+
+class OrderAuditOut(BaseModel):
+    action: str
+    actor_openid: Optional[str]
+    from_status: Optional[str]
+    to_status: Optional[str]
+    created_at: datetime
+    model_config = {"from_attributes": True}

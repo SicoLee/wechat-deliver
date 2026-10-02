@@ -73,6 +73,7 @@ class Order(Base):
     paid_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     items: Mapped[list["OrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
     events: Mapped[list["OrderEvent"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+    audit_logs: Mapped[list["OrderAuditLog"]] = relationship(back_populates="order", cascade="all, delete-orphan")
 
 
 class OrderItem(Base):
@@ -99,3 +100,16 @@ class OrderEvent(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     processed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     order: Mapped[Order] = relationship(back_populates="events")
+
+
+class OrderAuditLog(Base):
+    """Append-only operational history; intentionally separate from retriable outbox events."""
+    __tablename__ = "order_audit_logs"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("orders.id"), index=True)
+    action: Mapped[str] = mapped_column(String(40))
+    actor_openid: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    from_status: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    to_status: Mapped[Optional[str]] = mapped_column(String(40), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    order: Mapped[Order] = relationship(back_populates="audit_logs")

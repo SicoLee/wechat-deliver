@@ -67,6 +67,9 @@ def test_paid_order_is_visible_to_admin_and_can_progress():
         making = client.patch(f"/api/admin/orders/{order['id']}/status?status=MAKING", headers=headers)
         assert making.status_code == 200
         assert making.json()["status"] == "MAKING"
+        history = client.get(f"/api/admin/orders/{order['id']}/history", headers=headers)
+        assert [row["action"] for row in history.json()] == ["PAYMENT_CONFIRMED", "STATUS_CHANGED"]
+        assert history.json()[-1]["actor_openid"] == "test-admin"
 
 
 def test_customer_cannot_use_admin_endpoints():

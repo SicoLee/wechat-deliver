@@ -8,8 +8,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 from .config import get_settings
 from .db import get_db
-from .models import Admin, Order, OrderItem, OrderStatus, PaymentStatus, PrintStatus, Product
-from .schemas import OrderCreateIn, OrderOut, ProductOut
+from .models import Admin, Order, OrderAuditLog, OrderItem, OrderStatus, PaymentStatus, PrintStatus, Product
+from .schemas import OrderAuditOut, OrderCreateIn, OrderOut, ProductOut
+from .services.order_audit import record_order_audit
 from .services.delivery import MockCyclingDistanceProvider
 from .services.order_events import enqueue_receipt_print, process_pending_prints
 from .services.printer import MockPrinter
@@ -127,10 +128,12 @@ def mock_payment_callback(order_id: int, _: None = Depends(require_development),
     """Development stand-in for a verified WeChat payment callback; deliberately idempotent."""
     order = query_order(db, order_id)
     if order.payment_status == PaymentStatus.UNPAID:
+        previous_status = order.status.value
         order.status, order.payment_status, order.paid_at = OrderStatus.PAID, PaymentStatus.PAID, datetime.now()
         order.payment_provider = "mock"
         order.payment_transaction_id = f"mock-{order.order_no}"
         enqueue_receipt_print(db, order)
+        record_order_audit(db, order, "PAYMENT_CONFIRMED", from_status=previous_status, to_status=order.status.value)
         db.commit()
         # In production this dispatch happens in a worker after the verified callback has returned 204.
         process_pending_prints(db, printer, order.id)
@@ -147,21 +150,30 @@ def admin_orders(_: str = Depends(require_admin), db: Session = Depends(get_db))
     return db.scalars(select(Order).options(selectinload(Order.items)).where(Order.status != OrderStatus.PENDING_PAYMENT).order_by(Order.id.desc())).all()
 
 
+@app.get("/api/admin/orders/{order_id}/history", response_model=list[OrderAuditOut])
+def order_history(order_id: int, _: str = Depends(require_admin), db: Session = Depends(get_db)):
+    query_order(db, order_id)
+    return db.scalars(select(OrderAuditLog).where(OrderAuditLog.order_id == order_id).order_by(OrderAuditLog.id)).all()
+
+
 @app.patch("/api/admin/orders/{order_id}/status", response_model=OrderOut)
-def change_order_status(order_id: int, status: OrderStatus, _: str = Depends(require_admin), db: Session = Depends(get_db)):
+def change_order_status(order_id: int, status: OrderStatus, admin_openid: str = Depends(require_admin), db: Session = Depends(get_db)):
     order = query_order(db, order_id)
     transitions = {OrderStatus.PAID: {OrderStatus.MAKING}, OrderStatus.MAKING: {OrderStatus.READY_FOR_DELIVERY}, OrderStatus.READY_FOR_DELIVERY: {OrderStatus.COMPLETED}}
     if status not in transitions.get(order.status, set()):
         raise HTTPException(400, f"不允许从 {order.status.value} 改为 {status.value}")
+    previous_status = order.status.value
     order.status = status
+    record_order_audit(db, order, "STATUS_CHANGED", actor_openid=admin_openid, from_status=previous_status, to_status=status.value)
     db.commit()
     return query_order(db, order_id)
 
 
 @app.post("/api/admin/orders/{order_id}/reprint", response_model=OrderOut)
-def reprint(order_id: int, _: str = Depends(require_admin), db: Session = Depends(get_db)):
+def reprint(order_id: int, admin_openid: str = Depends(require_admin), db: Session = Depends(get_db)):
     order = query_order(db, order_id)
     enqueue_receipt_print(db, order)
+    record_order_audit(db, order, "REPRINT_REQUESTED", actor_openid=admin_openid)
     db.commit()
     process_pending_prints(db, printer, order.id)
     return query_order(db, order_id)
