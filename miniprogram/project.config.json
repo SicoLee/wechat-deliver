@@ -1,0 +1,6 @@
+{
+  "miniprogramRoot": "./",
+  "projectname": "wechat-deliver",
+  "appid": "touristappid",
+  "setting": { "es6": true, "minified": false }
+}

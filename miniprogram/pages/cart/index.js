@@ -1,0 +1,2 @@
+const c=require('../../utils/cart')
+Page({data:{cart:[],total:'0.00'},onShow(){this.refresh()},refresh(){const cart=c.getCart();this.setData({cart,total:c.total(cart).toFixed(2)})},plus(e){const cart=c.getCart();cart.find(x=>x.id===e.currentTarget.dataset.id).quantity++;c.saveCart(cart);this.refresh()},minus(e){let cart=c.getCart();const x=cart.find(x=>x.id===e.currentTarget.dataset.id);x.quantity--;if(!x.quantity)cart=cart.filter(x=>x.id!==e.currentTarget.dataset.id);c.saveCart(cart);this.refresh()},checkout(){wx.navigateTo({url:'/pages/checkout/index'})}})

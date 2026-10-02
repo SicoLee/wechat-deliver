@@ -1,0 +1,73 @@
+# 运行与测试指南
+
+## 你怎样看前端页面
+
+1. 安装并打开「微信开发者工具」。
+2. 点击“导入项目”，选择本项目的 `miniprogram` 文件夹；没有 AppID 时保持“测试号/游客模式”。
+3. 在终端按下节启动后端。
+4. 开发者工具右上角详情 → 本地设置，开发期间勾选“不校验合法域名、web-view（业务域名）、TLS 版本以及 HTTPS 证书”。
+5. 点击编译，默认会进入菜单页。顾客流程是：选菜 → 购物车 → 填地址 → 地图选地点/当前位置 → 模拟微信支付。
+
+> 微信开发者工具运行在电脑上时，`127.0.0.1:8000` 可以访问本机后端。真机预览需要换成一个公网 HTTPS API 域名，并在小程序后台配置为合法 request 域名。
+
+商家页面没有隐藏入口，开发时可在开发者工具的地址栏或“编译模式”打开 `pages/admin-orders/index`。首次输入已允许手机号 `18785409634` 或 `18285424586` 并绑定后，就可以看订单、改为制作中/待配送/完成、重新打印。
+
+## 启动后端
+
+在项目根目录执行：
+
+```bash
+cd server
+cp .env.example .env
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+
+第一次启动会自动创建 `server/data/dev.db` 并写入 5 个预设商品。接口文档在 <http://127.0.0.1:8000/docs>，健康检查在 <http://127.0.0.1:8000/api/health>。
+
+## 直接测试后端（不需要微信开发者工具）
+
+后端运行后，在另一个终端执行：
+
+```bash
+curl http://127.0.0.1:8000/api/health
+curl http://127.0.0.1:8000/api/products
+
+# 绑定一个开发演示商家；真实版必须先由微信服务端验证手机号授权凭据
+curl -X POST 'http://127.0.0.1:8000/api/auth/admin-bind?phone=18785409634' -H 'X-OpenID: demo-admin'
+
+# 查看商家已支付订单
+curl http://127.0.0.1:8000/api/admin/orders -H 'X-OpenID: demo-admin'
+```
+
+在前端完成一次模拟支付后，最后一条命令将显示订单。也可以在 `/docs` 中点接口逐个执行。
+
+## 切到 PostgreSQL
+
+开发阶段 SQLite 足够。要验证长期部署使用的 PostgreSQL，先执行：
+
+```bash
+docker compose up -d
+```
+
+然后把 `server/.env` 的 `DATABASE_URL` 改为：
+
+```dotenv
+DATABASE_URL=postgresql+psycopg://wechat_deliver:change-me-before-production@127.0.0.1:5432/wechat_deliver
+```
+
+重启 API 即会建表。生产环境应改用迁移工具（Alembic），不要依赖自动建表。
+
+## 上线前必须替换的模拟能力
+
+| 当前开发实现 | 正式替换点 |
+| --- | --- |
+| `MockCyclingDistanceProvider` | 腾讯地图骑行路线 API，保存其实际道路距离 |
+| `mock-payment-callback` | 微信支付 JSAPI 下单、回调验签、交易号与回调幂等表 |
+| `MockPrinter` | 选定云打印机的 API，保存请求 ID、失败原因、重试记录 |
+| 手填 `X-OpenID` / 演示 OpenID | `wx.login` code 服务端换 OpenID，签发自己的会话令牌 |
+| 直接手机号参数绑定 | 小程序 `getPhoneNumber` 一次性 code 服务端解密/换取手机号后再比对白名单 |
+
+还要在小程序后台申请 AppID、合规主体与微信支付商户号，配置 HTTPS 域名；订阅消息需要在下单/付款前让用户主动订阅相应模板。支付成功只以微信支付服务器回调为准。

@@ -1,0 +1,12 @@
+<view class="page">
+  <view class="card"><view class="title">收货地址</view><view class="muted">请先选地图位置，再补全门牌号</view>
+    <view class="btn secondary" style="margin-top:20rpx" bindtap="chooseLocation">地图选地点</view>
+    <view class="btn secondary" style="margin-top:16rpx" bindtap="useCurrentLocation">使用当前位置</view>
+    <view wx:if="{{location.name}}" class="muted" style="margin-top:16rpx">{{location.name}} · {{location.latitude}}, {{location.longitude}}</view>
+    <input placeholder="小区 / 楼栋 / 楼层 / 门牌号" value="{{detail}}" bindinput="inputDetail" style="border-bottom:1rpx solid #eee;padding:22rpx 0"/>
+    <input placeholder="收货联系电话" value="{{phone}}" bindinput="inputPhone" style="border-bottom:1rpx solid #eee;padding:22rpx 0"/>
+  </view>
+  <view class="card"><view>配送费 <text class="price">¥{{deliveryFee}}</text></view><view wx:if="{{distance}}" class="muted">模拟骑行距离 {{distance}} km（正式版将使用腾讯地图）</view></view>
+  <view class="card"><textarea placeholder="备注，例如：不要辣" value="{{remark}}" bindinput="inputRemark" auto-height/></view>
+  <view class="fixed-bottom"><view>合计 <text class="price">¥{{total}}</text></view><view class="btn" bindtap="submit">模拟微信支付</view></view>
+</view>

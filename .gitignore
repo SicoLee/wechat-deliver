@@ -1,0 +1,6 @@
+server/.venv/
+server/.env
+server/data/
+__pycache__/
+*.py[cod]
+.DS_Store
