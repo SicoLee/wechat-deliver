@@ -206,6 +206,21 @@ def test_print_dispatch_job_requires_dedicated_server_token(monkeypatch):
         assert response.json()["processed"] == 0
 
 
+def test_http_print_dispatch_uses_configured_retry_policy(monkeypatch):
+    observed = {}
+
+    def capture(db, active_printer, order_id=None, max_attempts=5, retry_delay_seconds=30):
+        observed.update(order_id=order_id, max_attempts=max_attempts, retry_delay_seconds=retry_delay_seconds)
+        return 0
+
+    monkeypatch.setattr(main_module, "process_pending_prints", capture)
+    monkeypatch.setattr(main_module.settings, "print_max_attempts", 7)
+    monkeypatch.setattr(main_module.settings, "print_retry_delay_seconds", 45)
+    with SessionLocal() as db:
+        assert main_module.dispatch_pending_prints(db) == 0
+    assert observed == {"order_id": None, "max_attempts": 7, "retry_delay_seconds": 45}
+
+
 def test_worker_can_poll_an_empty_outbox():
     assert run_once() == 0
 

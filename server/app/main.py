@@ -92,6 +92,17 @@ def delivery_quote_for(latitude: float, longitude: float):
     return distance, fee
 
 
+def dispatch_pending_prints(db: Session, order_id: Optional[int] = None) -> int:
+    """Keep API-triggered printing aligned with the worker's retry policy."""
+    return process_pending_prints(
+        db,
+        printer,
+        order_id,
+        max_attempts=settings.print_max_attempts,
+        retry_delay_seconds=settings.print_retry_delay_seconds,
+    )
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True, "env": settings.app_env, "payment_mode": "mock" if settings.app_env == "development" else "wechat"}
@@ -218,7 +229,7 @@ def mock_payment_callback(order_id: int, _: None = Depends(require_development),
     if order.payment_status == PaymentStatus.UNPAID:
         confirm_payment(db, order, "mock", f"mock-{order.order_no}")
         # In production this dispatch happens in a worker after the verified callback has returned 204.
-        process_pending_prints(db, printer, order.id)
+        dispatch_pending_prints(db, order.id)
     return query_order(db, order_id)
 
 
@@ -244,7 +255,7 @@ async def wechat_payment_notify(request: Request, db: Session = Depends(get_db))
 @app.post("/api/internal/jobs/dispatch-print-events")
 def dispatch_print_events(_: None = Depends(require_job_token), db: Session = Depends(get_db)):
     """Invoke from a private scheduler/worker; never expose JOB_TOKEN to the mini-program."""
-    return {"processed": process_pending_prints(db, printer)}
+    return {"processed": dispatch_pending_prints(db)}
 
 
 @app.get("/api/orders/mine", response_model=list[OrderOut])
@@ -296,5 +307,5 @@ def reprint(order_id: int, admin_openid: str = Depends(require_admin), db: Sessi
     enqueue_receipt_print(db, order)
     record_order_audit(db, order, "REPRINT_REQUESTED", actor_openid=admin_openid)
     db.commit()
-    process_pending_prints(db, printer, order.id)
+    dispatch_pending_prints(db, order.id)
     return query_order(db, order_id)
